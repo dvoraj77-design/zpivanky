@@ -1,6 +1,7 @@
 // Sdílené UI komponenty a háčky.
 import { html, render, useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from '../../vendor/htm-preact.js';
-import { state, subscribe } from '../state.js';
+import { scoreHex } from './theme.js';
+import { state, subscribe, saveSettings } from '../state.js';
 import { engine } from '../audio/engine.js';
 import { noteName } from '../core/music.js';
 
@@ -101,7 +102,7 @@ export function Sheet({ onClose, children }) {
   </div>`;
 }
 
-export function scoreColor(s) { return s >= 85 ? 'var(--good)' : s >= 65 ? 'var(--accent)' : s >= 45 ? 'var(--warn)' : 'var(--bad)'; }
+export function scoreColor(s) { return scoreHex(s); }
 export function scoreClass(s) { return s >= 85 ? 'c-good' : s >= 65 ? 'c-acc' : s >= 45 ? 'c-warn' : 'c-bad'; }
 
 export function ScoreRing({ score, label, size = 180 }) {
@@ -114,7 +115,7 @@ export function ScoreRing({ score, label, size = 180 }) {
     return () => cancelAnimationFrame(raf);
   }, [score]);
   return html`<div class="ring" style=${`width:${size}px;height:${size}px`}>
-    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r=${r} fill="none" stroke="#3a2f7a" stroke-width="9"/>
+    <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r=${r} fill="none" stroke="#eeece7" stroke-width="9"/>
       <circle cx="60" cy="60" r=${r} fill="none" stroke=${scoreColor(score)} stroke-width="9" stroke-linecap="round" stroke-dasharray=${`${(c * shown) / 100} ${c}`}/></svg>
     <div class="v"><div class="num">${shown}</div><div class="lab" style=${`color:${scoreColor(score)}`}>${label}</div></div>
   </div>`;
@@ -159,9 +160,16 @@ export function MicGate({ children, compact = false }) {
     try { setSt('starting'); await engine.startMic(state.settings.micDeviceId); setSt('on'); setErr(null); }
     catch (e) { setSt(engine.mic.status); setErr(e.message); }
   };
+  const [ctxState, setCtxState] = useState(engine.ctx?.state);
   useEffect(() => {
     if (engine.mic.status !== 'on' && !engine.testSource) start();
+    const iv = setInterval(() => setCtxState(engine.ctx?.state), 500);
+    return () => clearInterval(iv);
   }, []);
+  if ((st === 'on' || engine.testSource) && ctxState === 'suspended') {
+    return html`<div class="card infoc center"><p class="small">Prohlížeč čeká na klepnutí, než pustí zvuk.</p>
+      <button class="btn primary block" onClick=${async () => { await engine.ctx.resume().catch(() => {}); setCtxState(engine.ctx.state); }}>▶ Spustit zvuk</button></div>`;
+  }
   if (st === 'on' || engine.testSource) return children;
   return html`<div class=${compact ? 'card tight' : 'card'}>
     <div style="font-weight:800" class="mb8">${st === 'starting' ? 'Spouštím mikrofon…' : 'Potřebuji mikrofon'}</div>
@@ -172,4 +180,19 @@ export function MicGate({ children, compact = false }) {
 
 export function Empty({ icon = '🎵', title, text, action }) {
   return html`<div class="card center col" style="align-items:center;padding:28px 16px"><div style="font-size:44px">${icon}</div><h3>${title}</h3>${text ? html`<p class="muted small">${text}</p>` : null}${action || null}</div>`;
+}
+
+/** Výběr mikrofonu (s doporučením pro Bluetooth sluchátka). */
+export function MicSelect({ onChange }) {
+  const [inputs, setInputs] = useState([]);
+  const [cur, setCur] = useState(state.settings.micDeviceId || '');
+  useEffect(() => { engine.listInputs().then(setInputs).catch(() => {}); }, [engine.mic.status]);
+  const pick = async (id) => {
+    setCur(id);
+    await saveSettings({ micDeviceId: id || null });
+    try { await engine.startMic(id || null); } catch (e) { toast(e.message); }
+    onChange && onChange();
+  };
+  return html`<label class="field">Mikrofon<select value=${cur} onChange=${(e) => pick(e.target.value)}>
+    <option value="">Výchozí (systém)</option>${inputs.map((d) => html`<option value=${d.deviceId}>${d.label}</option>`)}</select></label>`;
 }

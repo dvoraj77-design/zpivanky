@@ -1,5 +1,5 @@
 // První spuštění: vítej → sluchátka → mikrofon a úroveň → kalibrace → test hlasu.
-import { html, useState, useEffect, navigate, MicGate, LevelMeter, Seg, useImmersive } from '../ui/common.js';
+import { html, useState, useEffect, navigate, MicGate, LevelMeter, Seg, useImmersive, MicSelect } from '../ui/common.js';
 import { state, saveSettings } from '../state.js';
 import { engine } from '../audio/engine.js';
 
@@ -29,7 +29,10 @@ export function OnboardingScreen() {
         <div class="ic">${h.type === 'bt' ? '🎧' : h.type === 'wired' ? '🔌' : '🔈'}</div><div class="grow"><div class="t">${h.name}</div><div class="s">${h.type === 'bt' ? 'poslech přes sluchátka, zpěv do telefonu' : h.type === 'wired' ? 'nejmenší zpoždění' : 'bez sluchátek'}</div></div>${hp === h.id ? html`<span class="c-acc">●</span>` : null}</button>`)}</div>
       ${guess?.any ? html`<p class="small muted mt8">Zjistil jsem připojená ${guess.bt ? 'Bluetooth ' : ''}sluchátka.</p>` : null}`,
     () => html`<h1>Mikrofon</h1><p class="muted mt8">Povol mikrofon. Zvuk zpracovávám jen v telefonu.</p>
-      <${MicGate}><div class="card mt16"><p class="small">Řekni něco nebo zazpívej – ukazatel by se měl hýbat:</p><${LevelMeter} /><div class="small muted mt16">Mikrofon: <b>${engine.mic.label}</b></div></div></${MicGate}>`,
+      <${MicGate}><div class="card mt16"><p class="small">Řekni něco nebo zazpívej – ukazatel by se měl hýbat:</p><${LevelMeter} />
+        <div class="small muted mt16">Používám: <b>${engine.mic.label}</b></div>
+        ${state.settings.hpProfiles.find((h) => h.id === hp)?.type === 'bt' ? html`<p class="small mt8">U Bluetooth sluchátek vyber <b>mikrofon telefonu</b> (ne „Bluetooth“/„headset“), ať hudba ve sluchátkách zní kvalitně:</p>` : null}
+        <div class="mt8"><${MicSelect} /></div></div></${MicGate}>`,
     () => html`<h1>Skoro hotovo</h1>
       <div class="card mt16"><p>Doporučuji dva krátké kroky:</p><ol><li><b>Kalibrace zpoždění</b> (10 s) – aby seděl rytmus.</li><li><b>Test hlasu</b> (3 min) – aby cvičení i písně seděly do tvého rozsahu.</li></ol>
         <p class="small muted">Obojí můžeš udělat i později v Já.</p></div>
@@ -39,7 +42,7 @@ export function OnboardingScreen() {
   ];
   const last = step === steps.length - 1;
   return html`<div class="screen full">
-    <div class="progress-seg mb16" style="margin-top:8px">${steps.map((_, i) => html`<i style=${`background:${i <= step ? '#ffc928' : '#3a2f7a'}`}></i>`)}</div>
+    <div class="progress-seg mb16" style="margin-top:8px">${steps.map((_, i) => html`<i style=${`background:${i <= step ? '#a8dcc9' : '#e9e6df'}`}></i>`)}</div>
     ${steps[step]()}
     ${!last ? html`<div class="bottom-actions mt24">${step > 0 ? html`<button class="btn" onClick=${() => setStep(step - 1)}>←</button>` : html`<button class="btn ghost" onClick=${() => finish('/')}>Přeskočit</button>`}
       <button class="btn primary big grow" onClick=${async () => { if (step === 2) await saveSettings({ activeHp: hp, headphones: state.settings.hpProfiles.find((h) => h.id === hp)?.type === 'speaker' ? 'no' : 'yes' }); setStep(step + 1); }}>Pokračovat</button></div>` : null}

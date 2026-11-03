@@ -52,10 +52,10 @@ export function ProgressScreen() {
       <div class="stat"><div class="k">Hotové lekce</div><div class="v">${Object.values(p.lessons).filter((l) => l.stars >= 1).length} / 50</div></div>
     </div>
     <div class="section-title">Posledních 28 dní</div>
-    <div class="card tight"><div style="display:grid;grid-template-columns:repeat(14,1fr);gap:4px">${days.map((d) => html`<div title=${d.k} style=${`aspect-ratio:1;border-radius:5px;background:${d.m === 0 ? '#41368a' : d.m >= goal ? '#5fd38d' : '#ffc92899'}`}></div>`)}</div>
+    <div class="card tight"><div style="display:grid;grid-template-columns:repeat(14,1fr);gap:4px">${days.map((d) => html`<div title=${d.k} style=${`aspect-ratio:1;border-radius:5px;background:${d.m === 0 ? '#ebe8e1' : d.m >= goal ? '#7fcbad' : '#f6d9ad'}`}></div>`)}</div>
       <div class="tiny dim mt8">Zelená = splněný denní cíl ${goal} min.</div></div>
     <div class="section-title">Přesnost v čase (týdny)</div>
-    <div class="card tight"><${LineChart} series=${[{ color: '#ffc928', points: weeks.map((x, i) => ({ x: i, y: x.avg })) }]} yMin=${0} yMax=${100} xLabels=${weeks.length ? [{ x: 0, text: fmtDate(weeks[0].week) }, { x: weeks.length - 1, text: fmtDate(weeks[weeks.length - 1].week) }] : []} /></div>
+    <div class="card tight"><${LineChart} series=${[{ color: '#6fa8dc', points: weeks.map((x, i) => ({ x: i, y: x.avg })) }]} yMin=${0} yMax=${100} xLabels=${weeks.length ? [{ x: 0, text: fmtDate(weeks[0].week) }, { x: weeks.length - 1, text: fmtDate(weeks[weeks.length - 1].week) }] : []} /></div>
     <div class="section-title">Vývoj rozsahu</div>
     <div class="card tight"><${RangeChart} history=${st.profileHistory} height=${160} /></div>
     <div class="section-title">Nejslabší noty</div>
@@ -121,12 +121,12 @@ function Compare({ ids, onClose }) {
   useEffect(() => {
     if (!recs || !ref.current) return;
     const { ctx, w, h } = setupCanvas(ref.current);
-    ctx.fillStyle = '#150e33'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#fcfbf9'; ctx.fillRect(0, 0, w, h);
     const all = recs.flatMap((r) => (r.frames || []).filter((f) => f.m != null));
     if (!all.length) return;
     const lo = Math.min(...all.map((f) => f.m)) - 1, hi = Math.max(...all.map((f) => f.m)) + 1;
     const T = Math.max(...recs.map((r) => Math.max(...(r.frames || [{ t: 1 }]).map((f) => f.t))));
-    const cols = ['#ffc928', '#2dd4bf'];
+    const cols = ['#f0a35e', '#6fa8dc'];
     recs.forEach((r, k) => {
       ctx.strokeStyle = cols[k]; ctx.lineWidth = 2.5; let prev = null;
       for (const f of r.frames || []) {
@@ -260,13 +260,13 @@ function Scope() {
       const cv = ref.current;
       if (cv) {
         const { ctx, w, h } = setupCanvas(cv);
-        ctx.fillStyle = '#150e33'; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = '#fcfbf9'; ctx.fillRect(0, 0, w, h);
         const b = buf.current; const n = b.length;
-        ctx.strokeStyle = '#5fd38d'; ctx.lineWidth = 1.5; ctx.beginPath();
+        ctx.strokeStyle = '#3fae84'; ctx.lineWidth = 1.5; ctx.beginPath();
         b.forEach((f, i) => { const x = (i / 300) * w, y = h - ((f.db + 90) / 90) * h; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-        ctx.strokeStyle = '#ff6b81'; ctx.beginPath();
+        ctx.strokeStyle = '#e06a7c'; ctx.beginPath();
         b.forEach((f, i) => { const x = (i / 300) * w, y = h - ((f.floorDb + 90) / 90) * h; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
-        ctx.fillStyle = '#ffc928';
+        ctx.fillStyle = '#f0a35e';
         b.forEach((f, i) => { if (f.freq) { const x = (i / 300) * w, y = h - (Math.log2(f.freq / 50) / Math.log2(30)) * h; ctx.fillRect(x, y, 2, 2); } });
       }
       raf = requestAnimationFrame(draw);

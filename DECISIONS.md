@@ -22,3 +22,8 @@ Každé rozhodnutí, které zadání neřešilo, jednou větou.
 18. **Lidové písně**: použity jen melodie, které jsou bezpečně autorsky volné; texty jsou vlastní nebo lidové; všechny ostatní melodie jsou původní.
 19. **APK**: Chrome při „Přidat na plochu“ sám vytvoří a nainstaluje WebAPK (ikona v seznamu aplikací, celá obrazovka), proto samostatné APK není nutné.
 20. **Testování mikrofonu**: kromě falešného zařízení Chromia (`--use-file-for-fake-audio-capture`) má aplikace testovací vstup, který přehraje vygenerovanou nahrávku synchronně se začátkem cvičení – jen tak jde přesně ověřit pozdní nástup.
+21. **Vzhled**: na přání uživatele během vývoje změněn z tmavě fialového na světlý pastelový (teplé světlé pozadí, bílé karty s jemným stínem, mátová / nebesky modrá / broskvová / levandulová / máslová); přesnost se dál značí barvou i tvarem (● ▲ ▼ ✕). Paleta je na jednom místě (`docs/js/ui/theme.js` + `:root` v `css/app.css`).
+22. **Automatická tónina písní** hledá posun v rozsahu ±24 půltónů (vestavěné písně jsou zapsané v libovolné výšce), ruční doladění je ±12 půltónů od doporučené.
+23. **Nástup u opakovaného stejného tónu** se nehodnotí (nejde spolehlivě odlišit od pokračování předchozího tónu); hodnotí se jen výška.
+24. **Bez sluchátek** se písně automaticky přehrávají v režimu „poslechni → zazpívej“ a cvičení mají napřed ukázku; aplikace pozná reproduktor podle zvoleného profilu, testem „Slyší mikrofon doprovod?“ a nabídne přepnutí.
+25. **Detekce běží ve Web Workeru**, ne přímo ve zvukovém vlákně, aby výpočet nikdy nezpůsobil praskání doprovodu na pomalejším telefonu.

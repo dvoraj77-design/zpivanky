@@ -92,7 +92,7 @@ Vlastní melodie s českým textem + lidové / volné melodie (autorsky volné).
 - „Naslepo“ režim (bez živé křivky)
 - Sdílení nahrávky přes systémové sdílení
 - Klavír s držením tónu a zobrazením intervalu
-- Tmavý režim je výchozí; vysoký kontrast textů
+- Světlý pastelový vzhled (změna na přání), přesnost značená barvou i tvarem
 
 ## Testování
 

@@ -44,7 +44,7 @@ export function MetronomeScreen() {
   };
   return html`<div class="screen"><${TopBar} title="Metronom" backTo="/tools" />
     <div class="card center"><div style="font-size:72px;font-weight:900">${bpm}</div><div class="muted">BPM</div>
-      <div class="row mt16" style="justify-content:center;gap:8px">${Array.from({ length: bpb }, (_, i) => html`<div style=${`width:28px;height:28px;border-radius:14px;background:${on && beat >= 0 && beat % bpb === i ? (i === 0 ? 'var(--accent)' : 'var(--teal)') : '#3a2f7a'}`}></div>`)}</div>
+      <div class="row mt16" style="justify-content:center;gap:8px">${Array.from({ length: bpb }, (_, i) => html`<div style=${`width:28px;height:28px;border-radius:14px;background:${on && beat >= 0 && beat % bpb === i ? (i === 0 ? '#f0a35e' : '#a8dcc9') : '#eeece7'}`}></div>`)}</div>
       <input class="mt16" type="range" min="40" max="200" value=${bpm} onInput=${(e) => change(parseInt(e.target.value, 10))} aria-label="Tempo" />
       <div class="row" style="justify-content:center"><button class="btn" onClick=${() => change(bpm - 5)}>−5</button><button class="btn" onClick=${() => change(bpm - 1)}>−1</button><button class="btn" onClick=${() => change(bpm + 1)}>+1</button><button class="btn" onClick=${() => change(bpm + 5)}>+5</button></div>
     </div>

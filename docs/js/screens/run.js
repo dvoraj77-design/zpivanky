@@ -1,5 +1,6 @@
 // Obrazovka zpěvu (cvičení i písně) a výsledky.
 import { html, useState, useEffect, useRef, useWakeLock, useInterval, ScoreRing, Stars, Sheet, toast, fmtNote, fmtTime, scoreClass, MicGate, Seg, useImmersive } from '../ui/common.js';
+import { C, scoreHex } from '../ui/theme.js';
 import { PitchRoll, viewRange } from '../ui/pitchroll.js';
 import { DeviationChart, DynChart } from '../ui/charts.js';
 import { Session, BreathSession } from '../app/session.js';
@@ -122,10 +123,10 @@ export function RunScreen(props) {
     <div class="progress-seg">${phrases.map((p, i) => {
       const ns = s.targets.filter((t) => t.phrase === p);
       const st = ns.map((t) => s.results[t.ri]).filter(Boolean);
-      const col = i + 1 < curPhrase ? '#5fd38d' : i + 1 === curPhrase && phase === 'running' ? '#ffc928' : '#3a2f7a';
+      const col = i + 1 < curPhrase ? C.goodFill : i + 1 === curPhrase && phase === 'running' ? C.curve : '#e9e6df';
       return html`<i style=${`background:${col}`}></i>`;
     })}</div>
-    <div class="row between small muted"><span>${fmtTime(Math.max(0, beat * spb))}</span><span style="font-weight:800;color:#fff">${phrases.length > 1 ? `Fráze ${Math.min(curPhrase, phrases.length)} / ${phrases.length}` : ''}</span><span>${fmtTime(total)}</span></div>
+    <div class="row between small muted"><span>${fmtTime(Math.max(0, beat * spb))}</span><span style="font-weight:800;color:var(--text)">${phrases.length > 1 ? `Fráze ${Math.min(curPhrase, phrases.length)} / ${phrases.length}` : ''}</span><span>${fmtTime(total)}</span></div>
     ${phase === 'ready' ? html`<${MicGate} compact=${true}><button class="btn primary big block" onClick=${start}>▶ Začít</button></${MicGate}>
       <div class="tiny dim center">${hpProfile()?.name || ''} · zpoždění ${hpProfile()?.latencyMs ?? 0} ms</div>`
       : html`<div class="row"><button class="btn" style="flex:1" onClick=${togglePause}>${paused ? '▶ Pokračovat' : '⏸ Pauza'}</button><button class="btn primary" style="flex:1" onClick=${stopNow}>■ Hotovo</button></div>`}
@@ -194,8 +195,7 @@ export function ResultView({ result, opts, title, extra, next, onRetry, onExit }
       const name = `zpivanky-${(title || 'nahravka').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.wav`;
       if (navigator.canShare && navigator.canShare({ files: [new File([blob], name, { type: 'audio/wav' })] }) && withAccomp === 'share') {
         await navigator.share({ files: [new File([blob], name, { type: 'audio/wav' })], title });
-      } else downloadBlob(blob, name);
-      toast('Uloženo do Stažených souborů.');
+      } else { downloadBlob(blob, name); toast('Uloženo do Stažených souborů.'); }
     } catch (e) { toast('Export se nepovedl: ' + e.message); }
   };
   const r = result;
@@ -214,7 +214,7 @@ export function ResultView({ result, opts, title, extra, next, onRetry, onExit }
       ${r.dynamics != null ? html`<div class="stat"><div class="k">Dynamika</div><div class=${'v ' + scoreClass(r.dynamics)}>${r.dynamics}</div></div>` : null}
     </div>` : null}
     ${r.phrases?.length ? html`<div class="section-title">Kde se zaměřit</div><div class="card tight">
-      <div class="row" style="gap:4px;height:10px;margin:4px 0 6px">${r.phrases.map((p) => html`<i style=${`flex:1;height:10px;border-radius:5px;background:${p.score >= 85 ? '#5fd38d' : p.score >= 65 ? '#ffc928' : p.score >= 45 ? '#ffb347' : '#ff6b81'}`}></i>`)}</div>
+      <div class="row" style="gap:4px;height:10px;margin:4px 0 6px">${r.phrases.map((p) => html`<i style=${`flex:1;height:10px;border-radius:5px;background:${scoreHex(p.score)}`}></i>`)}</div>
       ${r.phrases.map((p) => html`<div class="phr"><div class=${'sc ' + scoreClass(p.score)}>${p.score}</div><div class="grow ellipsis">${p.label || `Fráze ${p.index + 1}`}</div>
         ${r.recording || opts.audio?.length ? html`<button class="iconbtn" aria-label="Přehrát frázi" onClick=${() => (playing === 'p' + p.index ? stop() : playPhrase(p))}>${playing === 'p' + p.index ? '■' : '▶'}</button>` : null}</div>`)}
     </div>` : null}
@@ -223,7 +223,8 @@ export function ResultView({ result, opts, title, extra, next, onRetry, onExit }
     ${r.dynCurve?.length ? html`<div class="section-title">Hlasitost proti cíli</div><div class="card tight"><${DynChart} curve=${r.dynCurve} /><div class="tiny dim mt8">Žlutý pás = cíl, zelená = tvá hlasitost.</div></div>` : null}
     ${r.recording ? html`<div class="section-title">Moje nahrávka</div><div class="col">
       <button class="btn block" onClick=${() => (playing === 'all' ? stop() : play('all', { fromBeat: 0 }))}>${playing === 'all' ? '■ Zastavit' : '▶ Přehrát mě proti cíli'}</button>
-      <div class="row"><button class="btn sm grow" onClick=${() => exportWav(true)}>💾 WAV s doprovodem</button><button class="btn sm grow" onClick=${() => exportWav(false)}>💾 Jen hlas</button></div>
+      <div class="row"><button class="btn sm grow" onClick=${() => exportWav(true)}>💾 WAV s doprovodem</button><button class="btn sm grow" onClick=${() => exportWav(false)}>💾 Jen hlas</button>
+        ${navigator.share ? html`<button class="btn sm" aria-label="Sdílet nahrávku" onClick=${() => exportWav('share')}>📤</button>` : null}</div>
     </div>` : null}
     <div class="col mt24">
       ${next ? html`<button class="btn primary big block" onClick=${() => { stop(); next.go(); }}>${next.label}</button>` : null}

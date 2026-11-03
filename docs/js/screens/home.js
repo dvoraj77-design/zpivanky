@@ -23,7 +23,7 @@ export function HomeScreen() {
       <div class="row between"><b>Dnešní trénink</b><span class="small">${today} / ${goal} min</span></div>
       <div class="bar mt8"><i style=${`width:${Math.min(100, (today / goal) * 100)}%`}></i></div>
       <p class="small muted mt8">Rozezpívka → slabé místo → lekce → píseň. Přizpůsobí se tomu, co ti dělá potíže.</p>
-      <div class="grid3 mt8">${[5, 10, 20].map((m) => html`<button class="btn primary" onClick=${() => navigate('/plan/' + m)}>${m} min</button>`)}</div>
+      <div class="grid3 mt8">${[5, 10, 20].map((m) => html`<button class="btn" onClick=${() => navigate('/plan/' + m)}>${m} min</button>`)}</div>
     </div>
     <div class="section-title">Pokračuj v kurzu</div>
     <a class="item" href=${'#/lesson/' + nl.id}><div class="ic">${ch.icon}</div><div class="grow"><div class="s">Kapitola ${ch.n} · ${ch.title}</div><div class="t">${nl.title}</div></div><${Stars} n=${lessonState(p, nl.id).stars || 0} /></a>

@@ -17,7 +17,7 @@ export function CourseScreen() {
   return html`<div class="screen">
     <h1 class="mb8">Kurz</h1>
     <p class="muted small">10 kapitol, 50 lekcí – od prvního tónu k čistému zpěvu písní.</p>
-    <a class="item mt16" href=${'#/lesson/' + nl.id} style="background:linear-gradient(135deg,#4b2fb8,#2b2061)">
+    <a class="item mt16" href=${'#/lesson/' + nl.id} style="background:linear-gradient(135deg,#dff3ea,#dce9fa);box-shadow:none">
       <div class="ic">▶</div><div class="grow"><div class="s">Pokračovat</div><div class="t">${nl.title}</div></div><div class="chev">›</div></a>
     <div class="list mt16">${CHAPTERS.map((c) => {
       const pr = chapterProgress(st.progress, c.id);

@@ -35,7 +35,10 @@ export function PlanScreen({ minutes }) {
     const onResult = async (r) => { finish(idx, r); return saveAttempt(r, { type, id: it.id, title, opts: runOpts.opts, mode: 'guided', shift: runOpts.shift }); };
     const exit = () => setIdx(-1);
     const spec = runOpts.spec;
-    if (spec?.type === 'voicetest') { navigate('/voicetest'); return null; }
+    if (spec?.type === 'voicetest') return html`<div class="screen"><${TopBar} title=${title} onBack=${exit} />
+      <div class="card"><p>Tahle lekce je test hlasu (asi 3 minuty). Změří tvůj rozsah a nastaví tóninu.</p></div>
+      <div class="col mt16"><button class="btn primary big block" onClick=${() => navigate('/voicetest?lesson=' + it.id)}>🎙️ Spustit test hlasu</button>
+        <button class="btn block" onClick=${() => nextBtn.go()}>Přeskočit</button></div></div>`;
     if (spec?.type === 'earInterval') return html`<${EarQuiz} key=${idx} spec=${spec} title=${title} onExit=${exit} onResult=${onResult} next=${nextBtn} />`;
     if (spec?.type === 'breath') return html`<${BreathRun} key=${idx} target=${spec.target} steady=${spec.steady} title=${title} onExit=${exit} onResult=${onResult} next=${nextBtn} />`;
     const song = runOpts.song ? findSong(it.id) : null;

@@ -17,17 +17,17 @@ export function VoiceScreen() {
   const pos = (m) => `${Math.max(0, Math.min(100, ((m - 36) / 48) * 100))}%`;
   return html`<div class="screen">
     <${TopBar} title="Můj hlas" sub=${p.measured ? 'Změřeno testem' : 'Výchozí odhad – udělej test hlasu'} backTo="/me" />
-    <div class="card" style="border:2px solid var(--accent)">
+    <div class="card outline">
       <div class="tiny dim" style="letter-spacing:.1em;font-weight:800">PRACOVNÍ TÓNINA</div>
-      <div class="row mt8"><div class="ic" style="width:42px;height:42px;border-radius:12px;background:#1d4f7a;display:grid;place-items:center">🎚️</div><div style="font-size:26px;font-weight:900">${s.key}</div></div>
+      <div class="row mt8"><div style="width:44px;height:44px;border-radius:14px;background:var(--sky);display:grid;place-items:center">🎚️</div><div style="font-size:26px;font-weight:900">${s.key}</div></div>
       <div class="small muted mt8">Cvičení začínají na „do“ = ${fmtNote(p.workingTonic)} a posouvají se jen v pohodlném rozsahu.</div>
     </div>
     <div class="card mt16">
       <div class="tiny dim" style="letter-spacing:.1em;font-weight:800">ROZSAH</div>
-      <div style="position:relative;height:26px;margin-top:10px"><div style="position:absolute;top:10px;left:0;right:0;height:6px;border-radius:3px;background:#3a2f7a"></div>
-        <div style=${`position:absolute;top:10px;height:6px;border-radius:3px;background:#8f80ff88;left:${pos(p.low)};width:calc(${pos(p.highAll)} - ${pos(p.low)})`}></div>
-        <div style=${`position:absolute;top:8px;height:10px;border-radius:5px;background:#ff6b81;left:${pos(p.comfortLow)};width:calc(${pos(p.comfortHigh)} - ${pos(p.comfortLow)})`}></div>
-        ${p.speakMidi ? html`<div style=${`position:absolute;top:0;left:${pos(p.speakMidi)};width:12px;height:12px;border-radius:6px;background:#ff6b81;transform:translateX(-6px)`}></div>` : null}</div>
+      <div style="position:relative;height:26px;margin-top:10px"><div style="position:absolute;top:10px;left:0;right:0;height:6px;border-radius:3px;background:#eeece7"></div>
+        <div style=${`position:absolute;top:10px;height:6px;border-radius:3px;background:#e4e0fa;left:${pos(p.low)};width:calc(${pos(p.highAll)} - ${pos(p.low)})`}></div>
+        <div style=${`position:absolute;top:8px;height:10px;border-radius:5px;background:#f4a7b3;left:${pos(p.comfortLow)};width:calc(${pos(p.comfortHigh)} - ${pos(p.comfortLow)})`}></div>
+        ${p.speakMidi ? html`<div style=${`position:absolute;top:0;left:${pos(p.speakMidi)};width:12px;height:12px;border-radius:6px;background:#e06a7c;transform:translateX(-6px)`}></div>` : null}</div>
       <div class="row between tiny dim"><span>C2</span><span>C6</span></div>
       <div class="kv mt16" style="font-size:16px"><span>Celý rozsah</span><b>${s.range}</b><span>Hrudní hlas</span><b>${s.chest}</b><span>Pohodlný rozsah</span><b>${s.comfort}</b><span>Tessitura</span><b>${s.tess}</b><span>Mluvená výška</span><b>${s.speaking}</b></div>
     </div>
@@ -156,7 +156,7 @@ export function VoiceTestScreen({ query }) {
   const el = rec ? (performance.now() - rec.started) / 1000 : 0;
   return html`<div class="screen">
     <${TopBar} title=${`${step + 1}/${STEPS.length} · ${S.title}`} onBack=${() => (rec ? null : setStep(step - 1))} />
-    <div class="progress-seg mb16">${STEPS.map((_, i) => html`<i style=${`background:${i < step ? '#5fd38d' : i === step ? '#ffc928' : '#3a2f7a'}`}></i>`)}</div>
+    <div class="progress-seg mb16">${STEPS.map((_, i) => html`<i style=${`background:${i < step ? '#a8dcc9' : i === step ? '#f0a35e' : '#e9e6df'}`}></i>`)}</div>
     <div class="card"><div style="font-size:40px">${S.icon}</div><p class="lesson-text mt8">${S.text}</p></div>
     <${MicGate}>
       <div class="card mt16 center">

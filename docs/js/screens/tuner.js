@@ -1,12 +1,13 @@
 // Živá ladička: nota, oktáva, centy (ručička + barva + symbol), křivka posledních 10 s na mřížce not, bourdon.
 import { html, useState, useEffect, useRef, useFrames, useInterval, useAppState, MicGate, fmtNote, useWakeLock, Seg } from '../ui/common.js';
+import { C } from '../ui/theme.js';
 import { setupCanvas } from '../ui/pitchroll.js';
 import { engine } from '../audio/engine.js';
 import { state, tol, saveSettings } from '../state.js';
 import { noteName, pc, octaveOf, median } from '../core/music.js';
 import { STRICTNESS } from '../core/scoring.js';
 
-const COL = { ok: '#5fd38d', near: '#ffb347', off: '#ff6b81' };
+const COL = { ok: C.good, near: C.warn, off: C.bad };
 
 export function TunerScreen() {
   const st = useAppState();
@@ -57,14 +58,14 @@ export function TunerScreen() {
   const tapNote = (midi) => engine.previewNote(midi, 1.4);
   const style = st.settings.notation;
   const name = disp.midi != null ? noteName(disp.midi, { style, octave: false, keyPc: style === 'solf' ? 0 : undefined }) : '–';
-  const col = disp.status === 'none' ? '#9a90c8' : COL[disp.status];
+  const col = disp.status === 'none' ? C.dim : COL[disp.status];
   const sym = disp.midi == null ? '' : disp.status === 'ok' ? '●' : disp.cents > 0 ? '▲' : '▼';
   return html`<div class="screen">
     <div class="row between mb8"><h1>Ladička</h1><span class="small muted">±${tol()} centů</span></div>
     <${MicGate}>
       <div class="card center" style="padding:14px 12px">
         <button class="tuner-note" style="background:none;border:0;cursor:pointer;width:100%" onClick=${() => disp.midi != null && tapNote(disp.midi)} aria-label="Přehrát notu">
-          <span class="n" style=${`color:${disp.fading ? '#9a90c8' : '#fff'}`}>${name}</span>${disp.midi != null && style !== 'solf' ? html`<span class="o">${octaveOf(disp.midi)}</span>` : null}
+          <span class="n" style=${`color:${disp.fading ? C.dim : C.text}`}>${name}</span>${disp.midi != null && style !== 'solf' ? html`<span class="o">${octaveOf(disp.midi)}</span>` : null}
           <div class="c" style=${`color:${col}`}>${disp.midi == null ? 'Zazpívej tón' : `${sym} ${disp.status === 'ok' ? 'přesně' : (disp.cents > 0 ? '+' : '−') + Math.abs(Math.round(disp.cents)) + ' centů'}`}</div>
         </button>
         <${Needle} cents=${disp.midi == null ? 0 : disp.cents} color=${col} active=${disp.midi != null} />
@@ -107,17 +108,17 @@ function Needle({ cents, color, active }) {
         const ang = (c) => Math.PI + ((c + 50) / 100) * Math.PI;
         // pásma
         const band = (a, b, col) => { ctx.strokeStyle = col; ctx.lineWidth = 12; ctx.beginPath(); ctx.arc(cx, cy, R, ang(a), ang(b)); ctx.stroke(); };
-        band(-50, 50, '#3a2f7a');
-        band(-Math.min(50, t), Math.min(50, t), '#ffb34755');
-        band(-Math.min(50, t / 2), Math.min(50, t / 2), '#5fd38d88');
-        ctx.fillStyle = '#9a90c8'; ctx.font = '700 11px Nunito'; ctx.textAlign = 'center';
+        band(-50, 50, C.track);
+        band(-Math.min(50, t), Math.min(50, t), C.warnFill);
+        band(-Math.min(50, t / 2), Math.min(50, t / 2), C.goodFill);
+        ctx.fillStyle = C.label; ctx.font = '700 11px Nunito'; ctx.textAlign = 'center';
         for (const c of [-50, -25, 0, 25, 50]) { const a = ang(c); ctx.fillText(c > 0 ? '+' + c : String(c), cx + Math.cos(a) * (R - 22), cy + Math.sin(a) * (R - 22) + 4); }
         if (active) {
           const a = ang(cur.current);
           ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.lineCap = 'round';
           ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * (R + 4), cy + Math.sin(a) * (R + 4)); ctx.stroke();
         }
-        ctx.fillStyle = active ? color : '#5b4fb0'; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = active ? color : C.dim; ctx.beginPath(); ctx.arc(cx, cy, 7, 0, Math.PI * 2); ctx.fill();
       }
       raf = requestAnimationFrame(draw);
     };
@@ -129,7 +130,7 @@ function Needle({ cents, color, active }) {
 
 function drawHistory(cv, viewCenter) {
   const { ctx, w, h } = setupCanvas(cv);
-  ctx.fillStyle = '#150e33'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = C.canvas; ctx.fillRect(0, 0, w, h);
   const now = engine.now;
   const hist = engine.history;
   const span = 10;
@@ -148,9 +149,9 @@ function drawHistory(cv, viewCenter) {
   ctx.font = '700 11px Nunito'; ctx.textBaseline = 'middle';
   for (let n = lo; n < lo + rows; n++) {
     const y = yOf(n);
-    ctx.strokeStyle = [0, 2, 4, 5, 7, 9, 11].includes(pc(n)) ? '#2f2670' : '#221a55';
+    ctx.strokeStyle = [0, 2, 4, 5, 7, 9, 11].includes(pc(n)) ? C.gridStrong : C.grid;
     ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(L, y); ctx.lineTo(w, y); ctx.stroke();
-    ctx.fillStyle = pc(n) === pc(state.profile.workingTonic) ? '#ffc928' : '#9a90c8';
+    ctx.fillStyle = pc(n) === pc(state.profile.workingTonic) ? C.labelKey : C.label;
     ctx.fillText(noteName(n, { style: state.settings.notation, keyPc: state.settings.notation === 'solf' ? 0 : undefined }), 6, y);
   }
   const X = (t) => L + (1 - (now - t) / span) * (w - L - 8);
@@ -168,5 +169,5 @@ function drawHistory(cv, viewCenter) {
     }
     prev = { x, y };
   }
-  if (prev) { ctx.fillStyle = '#ffc928'; ctx.beginPath(); ctx.arc(prev.x, prev.y, 6, 0, Math.PI * 2); ctx.fill(); }
+  if (prev) { ctx.fillStyle = C.curve; ctx.beginPath(); ctx.arc(prev.x, prev.y, 6, 0, Math.PI * 2); ctx.fill(); }
 }

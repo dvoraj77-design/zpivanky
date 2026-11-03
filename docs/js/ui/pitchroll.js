@@ -1,8 +1,9 @@
 // Válec not: noty jako pruhy na mřížce výšek, text pod nimi, živá křivka hlasu obarvená podle přesnosti.
 import { html, useRef, useEffect } from './common.js';
+import { C } from './theme.js';
 import { noteName, pc, foldCents } from '../core/music.js';
 
-const COL = { grid: '#2a2160', gridStrong: '#3b2f80', label: '#9a90c8', labelKey: '#ffc928', note: '#8f80ff', noteNow: '#b9afff', listen: '#5b4fb0', good: '#5fd38d', warn: '#ffb347', bad: '#ff6b81', curve: '#ffc928', text: '#e9e5ff' };
+const COL = { grid: C.grid, gridStrong: C.gridKey, label: C.label, labelKey: C.labelKey, note: C.note, noteNow: C.noteNow, listen: C.noteListen, good: C.good, warn: C.warn, bad: C.bad, curve: C.curve, text: '#5a5c6e' };
 
 export function statusOf(dev, tol) {
   if (dev == null) return 'none';
@@ -33,7 +34,7 @@ function rr(ctx, x, y, w, h, r) {
  */
 export function drawRoll(ctx, w, h, m) {
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#150e33'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = C.canvas; ctx.fillRect(0, 0, w, h);
   const gutter = 46;
   const beat = m.beat();
   const ppb = m.pxPerBeat || 60;
@@ -67,7 +68,7 @@ export function drawRoll(ctx, w, h, m) {
   for (let b = firstB; b <= lastB; b++) {
     const x = xOf(b);
     if (x < gutter) continue;
-    ctx.strokeStyle = b % bpb === 0 ? '#33297388' : '#2a216044';
+    ctx.strokeStyle = b % bpb === 0 ? 'rgba(47,49,64,0.09)' : 'rgba(47,49,64,0.035)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, topPad); ctx.lineTo(x, h - botPad); ctx.stroke();
   }
@@ -81,7 +82,7 @@ export function drawRoll(ctx, w, h, m) {
     const now = beat >= it.t && beat < it.t + it.d;
     const r = it.ri != null ? res[it.ri] : null;
     let fill = it.listen ? COL.listen : now ? COL.noteNow : COL.note;
-    if (r && beat > it.t + it.d) fill = r === 'ok' ? COL.good : r === 'missed' ? COL.bad : COL.warn;
+    if (r && beat > it.t + it.d) fill = r === 'ok' ? C.goodFill : r === 'missed' ? C.badFill : C.warnFill;
     const bh = Math.max(8, Math.min(18, rowH * 0.8));
     if (it.kind === 'glide') {
       ctx.strokeStyle = fill; ctx.lineWidth = bh; ctx.lineCap = 'round';
@@ -98,7 +99,7 @@ export function drawRoll(ctx, w, h, m) {
     }
     if (it.syl && !it.listen && m.showLyrics !== false) {
       ctx.font = now ? '900 14px Nunito, sans-serif' : '700 13px Nunito, sans-serif';
-      ctx.fillStyle = now ? '#ffffff' : COL.text;
+      ctx.fillStyle = now ? C.text : COL.text;
       const ty = it.kind === 'glide' ? Math.max(yOf(it.midi), yOf(it.toMidi)) + bh / 2 + 15 : yOf(it.midi) + bh / 2 + 15;
       ctx.fillText(it.syl, x0 + 3, Math.min(h - 6, ty));
     }
@@ -120,7 +121,7 @@ export function drawRoll(ctx, w, h, m) {
     }
   }
   // hrací čára
-  ctx.strokeStyle = '#ffffff22'; ctx.lineWidth = 14;
+  ctx.strokeStyle = 'rgba(47,49,64,0.06)'; ctx.lineWidth = 14;
   ctx.beginPath(); ctx.moveTo(playX, topPad); ctx.lineTo(playX, h - botPad); ctx.stroke();
   const live = m.live;
   if (!m.hideCurve && live && live.midi != null) {
@@ -131,7 +132,7 @@ export function drawRoll(ctx, w, h, m) {
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(playX, y, 26, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = col; ctx.beginPath(); ctx.arc(playX, y, 10, 0, Math.PI * 2); ctx.fill();
     // tvar podle přesnosti: ▲ vysoko, ▼ nízko, ● přesně
-    ctx.fillStyle = '#1b1240'; ctx.font = '900 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#ffffff'; ctx.font = '900 12px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(live.dev == null ? '' : live.status === 'ok' ? '●' : live.dev > 0 ? '▲' : '▼', playX, y + 1);
     ctx.textAlign = 'left';
     if (live.dev != null && live.status !== 'ok') {

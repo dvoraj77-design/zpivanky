@@ -57,7 +57,7 @@ export function EarQuiz({ spec, title, onExit, onResult, next }) {
   }
   return html`<div class="screen full">
     <div class="topbar"><button class="back" onClick=${onExit} aria-label="Zavřít">✕</button><div class="grow"><h2>${title}</h2><div class="small muted">Otázka ${i + 1} z ${plan.questions.length}</div></div></div>
-    <div class="progress-seg mb16">${plan.questions.map((_, k) => html`<i style=${`background:${k < answers.length ? (answers[k] ? '#5fd38d' : '#ff6b81') : k === i ? '#ffc928' : '#3a2f7a'}`}></i>`)}</div>
+    <div class="progress-seg mb16">${plan.questions.map((_, k) => html`<i style=${`background:${k < answers.length ? (answers[k] ? '#a8dcc9' : '#f5c2ca') : k === i ? '#f0a35e' : '#e9e6df'}`}></i>`)}</div>
     <div class="card center col" style="align-items:center">
       <div style="font-size:54px">👂</div>
       <p class="muted">${q.harmonic ? 'Dva tóny zazní současně.' : 'Dva tóny zazní po sobě.'} Jaký je to interval?</p>
