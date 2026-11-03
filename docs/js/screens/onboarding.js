@@ -1,5 +1,5 @@
 // První spuštění: vítej → sluchátka → mikrofon a úroveň → kalibrace → test hlasu.
-import { html, useState, useEffect, navigate, MicGate, LevelMeter, Seg, useImmersive, MicSelect } from '../ui/common.js';
+import { html, useState, useEffect, navigate, MicGate, LevelMeter, Seg, useImmersive, MicSelect, MicLabel } from '../ui/common.js';
 import { state, saveSettings } from '../state.js';
 import { engine } from '../audio/engine.js';
 
@@ -30,7 +30,7 @@ export function OnboardingScreen() {
       ${guess?.any ? html`<p class="small muted mt8">Zjistil jsem připojená ${guess.bt ? 'Bluetooth ' : ''}sluchátka.</p>` : null}`,
     () => html`<h1>Mikrofon</h1><p class="muted mt8">Povol mikrofon. Zvuk zpracovávám jen v telefonu.</p>
       <${MicGate}><div class="card mt16"><p class="small">Řekni něco nebo zazpívej – ukazatel by se měl hýbat:</p><${LevelMeter} />
-        <div class="small muted mt16">Používám: <b>${engine.mic.label}</b></div>
+        <div class="small muted mt16">Používám: <${MicLabel} /></div>
         ${state.settings.hpProfiles.find((h) => h.id === hp)?.type === 'bt' ? html`<p class="small mt8">U Bluetooth sluchátek vyber <b>mikrofon telefonu</b> (ne „Bluetooth“/„headset“), ať hudba ve sluchátkách zní kvalitně:</p>` : null}
         <div class="mt8"><${MicSelect} /></div></div></${MicGate}>`,
     () => html`<h1>Skoro hotovo</h1>

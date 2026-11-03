@@ -196,3 +196,10 @@ export function MicSelect({ onChange }) {
   return html`<label class="field">Mikrofon<select value=${cur} onChange=${(e) => pick(e.target.value)}>
     <option value="">Výchozí (systém)</option>${inputs.map((d) => html`<option value=${d.deviceId}>${d.label}</option>`)}</select></label>`;
 }
+
+/** Název právě používaného mikrofonu (obnovuje se). */
+export function MicLabel() {
+  const [, f] = useState(0);
+  useInterval(() => f((x) => x + 1), 1000);
+  return html`<b>${engine.mic.label || '–'}</b>`;
+}
