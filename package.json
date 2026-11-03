@@ -5,8 +5,8 @@
   "description": "Zpívánky – osobní offline aplikace na učení zpěvu (PWA)",
   "type": "module",
   "scripts": {
-    "test": "node --test tests/unit/",
-    "e2e": "node --test --test-concurrency=1 tests/e2e/",
+    "test": "node --test tests/unit/*.test.mjs",
+    "e2e": "node --test --test-concurrency=1 tests/e2e/*.test.mjs",
     "build": "node scripts/build-precache.mjs",
     "serve": "node scripts/serve.mjs"
   },

@@ -95,13 +95,13 @@ export function recommendShifts(notes, profile, { count = 3 } = {}) {
   wmean /= wsum;
   const tessC = (profile.tessLow + profile.tessHigh) / 2;
   const opts = [];
-  for (let s = -12; s <= 12; s++) {
+  for (let s = -24; s <= 24; s++) {
     const l = lo + s, h = hi + s;
     let pen = 0;
     if (l < profile.low || h > profile.highChest) pen += 1000; // mimo změřený rozsah – nepřípustné
-    pen += Math.max(0, profile.comfortLow - l) * 12 + Math.max(0, h - profile.comfortHigh) * 15;
+    pen += Math.max(0, profile.comfortLow - l) * 30 + Math.max(0, h - profile.comfortHigh) * 30;
     pen += Math.abs(wmean + s - tessC) * 2;
-    pen += Math.abs(s) * 0.15; // mírně preferuj původní tóninu
+    pen += Math.abs(s) * 0.05; // mírně preferuj původní tóninu
     opts.push({ shift: s, pen, fits: l >= profile.comfortLow && h <= profile.comfortHigh, inRange: l >= profile.low && h <= profile.highChest });
   }
   opts.sort((a, b) => a.pen - b.pen);

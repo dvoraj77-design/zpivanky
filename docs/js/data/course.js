@@ -1,0 +1,180 @@
+// Kurz pro úplného začátečníka: 10 kapitol, 50 lekcí. Každá lekce: vysvětlení (2–4 věty), cvičení, písně jako odměna.
+// Cvičení se generují v pracovní tónině uživatele (exercises.js) a posouvají se po půltónech v pohodlném rozsahu.
+
+const L = (id, title, text, ex, extra = {}) => ({ id, title, text, ex, ...extra });
+
+export const CHAPTERS = [
+  {
+    id: 'c1', n: 1, title: 'Poznej svůj hlas', icon: '🎙️', songs: ['dobre-rano'],
+    intro: 'Co je tón, jak funguje ladička a kde leží tvůj hlas.',
+    lessons: [
+      L('c1l1', 'Co je tón', 'Tón je pravidelné kmitání hlasivek; čím rychleji kmitají, tím je tón vyšší. Výšku měříme v hertzech (Hz) a malé odchylky v centech – sto centů je jeden půltón. Zazpívej libovolný pohodlný tón na „u“ a drž ho rovně; sleduj, jak se čára na mřížce nehýbe.',
+        { type: 'hold', degrees: [1], holdBeats: 4, reps: 2, syl: 'u', tempo: 70 }),
+      L('c1l2', 'Ladička a zpětná vazba', 'Ladička ti v reálném čase ukazuje, jak vysoko zpíváš: zelená ● je přesně, ▲ znamená příliš vysoko a ▼ příliš nízko. Nejdřív tón poslouchej, pak ho zazpívej stejně. Neopravuj se trhnutím – posuň hlas plynule.',
+        { type: 'match', degrees: [1, 1, 1], count: 3, holdBeats: 3, syl: 'u', tempo: 72 }),
+      L('c1l3', 'Bručení „mmm“', 'Bručení se zavřenými rty je nejšetrnější způsob, jak hlas probudit. Rty jsou lehce u sebe, zuby od sebe a jazyk volně dole. Měl bys cítit jemné šimrání na rtech a v nose – to je rezonance.',
+        { type: 'hold', degrees: [1, 3, 5], holdBeats: 3, reps: 2, syl: 'mm', tempo: 72 }),
+      L('c1l4', 'Test hlasu', 'Změříme tvou mluvenou výšku, nejnižší a nejvyšší tón v hrudním hlase i ve falzetu a výdrž dechu. Podle toho aplikace nastaví pracovní tóninu a posune všechna cvičení i písně do tvého rozsahu. Test trvá asi 3 minuty a můžeš ho kdykoli zopakovat.',
+        { type: 'voicetest' }),
+      L('c1l5', 'Do – mi – sol', 'Do, mi a sol jsou tóny durového akordu – kostra většiny písní. Nejdřív každý tón poslechni, pak ho zazpívej a vydrž. Zkus si tóny zapamatovat jako schody: dole, uprostřed, nahoře.',
+        { type: 'match', degrees: [1, 3, 5, 3, 1], count: 5, holdBeats: 3, tempo: 76 }),
+    ],
+  },
+  {
+    id: 'c2', n: 2, title: 'Dech a postoj', icon: '🌬️', songs: ['houpacka'],
+    intro: 'Opora dechu je základ stabilního a zdravého zpěvu.',
+    lessons: [
+      L('c2l1', 'Postoj a „sss“', 'Stůj vzpřímeně, chodidla na šířku boků, kolena povolená, ramena dole. Nadechni se nosem do břicha a boků (ramena se nezvedají) a vydechuj na tiché, rovné „sss“. Cíl je 8 sekund bez kolísání.',
+        { type: 'breath', target: 8 }),
+      L('c2l2', 'Bráničné dýchání', 'Při nádechu bránice klesá a břicho i boky se rozšiřují; při výdechu se pomalu vrací. Polož si ruku na břicho a sleduj, že se pohybuje víc než hrudník. Vydechuj na „sss“ co nejdéle – cíl 12 sekund.',
+        { type: 'breath', target: 12 }),
+      L('c2l3', 'Řízený výdech', 'Ve zpěvu nejde o to mít hodně vzduchu, ale pouštět ho rovnoměrně. Vydechuj na „fff“ nebo „sss“ se stále stejnou silou – žlutý pás ukazuje, jak stabilní je proud. Žebra nech roztažená co nejdéle.',
+        { type: 'breath', target: 10, steady: true }),
+      L('c2l4', 'Opora na tónu', 'Teď stejný rovný proud vzduchu použij na tón. Drž tón i sílu hlasu stejnou od začátku do konce, jako bys táhl rovnou čáru. Na konci neber dech „ze zásoby“ – raději dřív skonči.',
+        { type: 'dynamics', curve: 'steady', degree: 3, holdBeats: 6, reps: 2, rangeDb: 0, sylText: 'a', tempo: 70 }),
+      L('c2l5', 'Fráze na jeden dech', 'Zazpívej celou stupnici nahoru a dolů na jeden nádech. Nádech si udělej v klidu před začátkem, během fráze nedýchej. Pokud dech nestačí, zkus pomaleji vydechovat, ne silněji nadechovat.',
+        { type: 'scale', degrees: [1, 2, 3, 4, 5, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 1, 1, 2], reps: 3, tempo: 72, syl: 'la' }),
+    ],
+  },
+  {
+    id: 'c3', n: 3, title: 'Trefit tón', icon: '🎯', songs: ['tri-tony'],
+    intro: 'Slyš tón a zazpívej ho – základ čistého zpěvu.',
+    lessons: [
+      L('c3l1', 'Slyš a zazpívej', 'Nejdřív tón jen poslouchej a v duchu si ho „zazpívej“. Pak nasaď měkce a hned na správné výšce – bez sklouznutí zespodu. Pokud se netrefíš, uprav výšku pomalu podle šipky.',
+        { type: 'match', degrees: [1, 2, 3, 2, 1], count: 5, holdBeats: 3, tempo: 76 }),
+      L('c3l2', 'Tóny nahoru', 'Každý další tón je o kousek výš. U vyšších tónů nezvedej bradu ani ramena – výška se dělá hlasivkami, ne krkem. Mysli na tón shora, ne „vytlač ho“.',
+        { type: 'match', degrees: [1, 2, 3, 4, 5], count: 5, holdBeats: 3, tempo: 76 }),
+      L('c3l3', 'Tóny dolů', 'Při sestupu má hlas tendenci padat moc nízko a ztrácet sílu. Udrž stejnou oporu dechu i u nižších tónů a mysli na jasný, „usměvavý“ zvuk.',
+        { type: 'match', degrees: [5, 4, 3, 2, 1], count: 5, holdBeats: 3, tempo: 76 }),
+      L('c3l4', 'Náhodné tóny', 'Teď tóny přicházejí v náhodném pořadí v rámci tvého pohodlného rozsahu. Před každým nasazením si tón nejdřív představ. Pokud tón neznáš, pomůže si ho tiše zabručet.',
+        { type: 'match', random: true, count: 6, holdBeats: 3, tempo: 76, syl: 'u' }),
+      L('c3l5', 'Naslepo', 'Tentokrát neuvidíš živou křivku – spoléhej jen na sluch. Výsledek uvidíš až na konci. Tak se učíš vnitřní kontrolu, kterou budeš potřebovat při zpěvu bez aplikace.',
+        { type: 'match', degrees: [1, 3, 5, 2, 4], count: 5, holdBeats: 3, tempo: 76, hideCurve: true }),
+    ],
+  },
+  {
+    id: 'c4', n: 4, title: 'Držet tón', icon: '➖', songs: ['ukolebavka'],
+    intro: 'Stabilní tón bez kolísání a bez klesání na konci.',
+    lessons: [
+      L('c4l1', 'Tři sekundy', 'Zazpívej tón a drž ho rovně tři sekundy. Sleduj, aby čára nestoupala ani neklesala, hlavně na konci, kdy dochází dech. Konec tónu uvolni, neusekni.',
+        { type: 'hold', degrees: [1], holdBeats: 3, reps: 4, syl: 'a', tempo: 60 }),
+      L('c4l2', 'Šest sekund', 'Delší tón prověří tvou oporu. Nadechni se klidně předem a vydechuj pomalu. Pokud tón na konci klesá, mysli na něj „nahoru“ a mírně přidej dechový tlak.',
+        { type: 'hold', degrees: [5], holdBeats: 6, reps: 3, syl: 'a', tempo: 60 }),
+      L('c4l3', 'Bez kolísání', 'Teď sleduj hlavně klid: tón nesmí vlnit ani se chvět. Uvolni čelist a jazyk, nehýbej hlavou. Hodnocení se zaměřuje na stabilitu.',
+        { type: 'hold', degrees: [3], holdBeats: 5, reps: 3, syl: 'u', tempo: 60 }),
+      L('c4l4', 'Samohlásky na jednom tónu', 'Drž jeden tón a pomalu měň samohlásky: a – e – i – o – u. Výška se nesmí měnit, i když se mění tvar úst. To je dobrý trénink pro zpívání textu.',
+        { type: 'hold', degrees: [1], holdBeats: 8, reps: 2, syl: 'a', tempo: 60 }),
+      L('c4l5', 'Držení v různých výškách', 'Drž postupně do, mi, sol a horní do (pokud se vejde do tvého rozsahu). Každá výška se zpívá trochu jinak – nahoře lehčeji, dole plněji. Výška tónu se ale vždy drží stejně stabilně.',
+        { type: 'hold', degrees: [1, 3, 5, 8], holdBeats: 3, reps: 1, syl: 'a', tempo: 60 }),
+    ],
+  },
+  {
+    id: 'c5', n: 5, title: 'Kroky a stupnice', icon: '🪜', songs: ['po-schodech', 'oda-na-radost'],
+    intro: 'Stupnicové vzorce jako klasická rozezpívka.',
+    lessons: [
+      L('c5l1', '1-2-1', 'Nejmenší krok ve stupnici je sekunda. Zazpívej do–re–do a dej pozor, ať se re nezvedne málo – začátečníci ho často zpívají níž. Každé opakování je o půltón výš.',
+        { type: 'scale', degrees: [1, 2, 1], durs: [1, 1, 2], reps: 4, tempo: 80 }),
+      L('c5l2', '1-2-3-2-1', 'Tři tóny nahoru a zpět. Tóny spojuj plynule (legato), ale každý ať zazní na své výšce. Na mi nezapomeň – je to velká tercie nad do a bývá zpívaná nízko.',
+        { type: 'scale', degrees: [1, 2, 3, 2, 1], durs: [1, 1, 1, 1, 2], reps: 4, tempo: 84 }),
+      L('c5l3', '1-2-3-4-3-2-1', 'Přidáváme fa – pozor, mezi mi a fa je jen půltón, takže fa nesmí být příliš vysoko. Drž stejnou barvu hlasu nahoře i dole.',
+        { type: 'scale', degrees: [1, 2, 3, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 2], reps: 4, tempo: 88 }),
+      L('c5l4', '1-2-3-4-5-4-3-2-1', 'Klasická rozezpívka „do re mi fa sol fa mi re do“. Nahoře na sol neztrácej oporu a nezvedej bradu. Opakování stoupají po půltónech jen do tvého pohodlného rozsahu.',
+        { type: 'scale', degrees: [1, 2, 3, 4, 5, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 1, 1, 2], reps: 5, tempo: 92, direction: 'updown' }),
+      L('c5l5', 'Celá stupnice', 'Celá durová stupnice od do po horní do a zpět. Pozor na dva půltóny: mi–fa a ti–do. Pokud se oktáva nevejde do tvého rozsahu, aplikace použije nejvyšší bezpečnou polohu.',
+        { type: 'scale', degrees: [1, 2, 3, 4, 5, 6, 7, 8, 7, 6, 5, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2], reps: 3, tempo: 96, extended: true }),
+    ],
+  },
+  {
+    id: 'c6', n: 6, title: 'Skoky a intervaly', icon: '🦘', songs: ['hvezdicka', 'kukacka', 'vecerni', 'na-louce', 'horska', 'valcik'],
+    intro: 'Tercie, kvarta, kvinta a oktáva – přesné skoky.',
+    lessons: [
+      L('c6l1', 'Tercie', 'Velká tercie (do–mi) zní jasně a vesele. Při skoku si mi nejdřív představ a pak na něj „doskoč“ přímo, bez klouzání. Začátek písně „Na louce“ je postavený právě na terciích.',
+        { type: 'interval', degrees: [1, 3, 1], durs: [1, 1, 2], reps: 4, tempo: 80 }),
+      L('c6l2', 'Kvinta', 'Čistá kvinta (do–sol) je pevný, „prázdný“ interval – začíná jím třeba „Hvězdičko, ty maličká“. Horní tón nezvedej moc vysoko; kvinta má znít klidně a stabilně.',
+        { type: 'interval', degrees: [1, 5, 1], durs: [1, 1, 2], reps: 4, tempo: 80 }),
+      L('c6l3', 'Arpeggio 1-3-5-3-1', 'Arpeggio je rozložený akord: do–mi–sol–mi–do. Tóny jsou daleko od sebe, takže každý skok musíš slyšet dopředu. Zpívej lehce, jako by tóny skákaly po schodech ob jeden.',
+        { type: 'arpeggio', degrees: [1, 3, 5, 3, 1], durs: [1, 1, 1, 1, 2], reps: 4, tempo: 84 }),
+      L('c6l4', 'Kvarta', 'Čistá kvarta (do–fa nebo sol–do) zní slavnostně – jako začátek pochodu nebo hymny. Pozor, kvarta se snadno splete s kvintou; poslouchej, že je o krok menší.',
+        { type: 'interval', degrees: [1, 4, 1, 5, 8, 5], durs: [1, 1, 2, 1, 1, 2], reps: 3, tempo: 80, extended: true }),
+      L('c6l5', 'Oktáva a velké arpeggio', 'Oktáva je stejný tón o osm stupňů výš – kmitočet je přesně dvojnásobný. Zazpívej do–mi–sol–do–sol–mi–do; horní do mysli lehce a vzdušně, netlač ho. Pokud je mimo pohodlí, aplikace drží cvičení v bezpečném rozsahu.',
+        { type: 'arpeggio', degrees: [1, 3, 5, 8, 5, 3, 1], durs: [1, 1, 1, 1, 1, 1, 2], reps: 3, tempo: 84, extended: true }),
+    ],
+  },
+  {
+    id: 'c7', n: 7, title: 'Rytmus', icon: '🥁', songs: ['kapky', 'pochod', 'polka', 'svetla-mesta'],
+    intro: 'Nástupy včas a zpěv na metronom.',
+    lessons: [
+      L('c7l1', 'Nástupy na metronom', 'Rytmus začíná přesným nástupem. Poslechni si vzor a pak zazpívej krátké „pa“ přesně s kliknutím metronomu. Nadechni se už o dobu dřív, ať nenastupuješ pozdě.',
+        { type: 'rhythm', pattern: [[0, 1], [1, 1], [2, 1], [3, 1]], reps: 3, tempo: 80 }),
+      L('c7l2', 'Půlové a čtvrťové', 'Půlová nota trvá dvě doby, čtvrťová jednu. Ve vzoru se střídají – drž „paa“ přes dvě doby a krátké „pa“ na jednu. Počítej si v duchu „raz, dva, tři, čtyři“.',
+        { type: 'rhythm', pattern: [[0, 2], [2, 1], [3, 1]], reps: 3, tempo: 84 }),
+      L('c7l3', 'Osminy', 'Osminové noty jsou dvakrát rychlejší než doba: „raz-a, dva-a“. Zpívej je lehce a krátce, jazykem, ne bránicí.',
+        { type: 'rhythm', pattern: [[0, 1], [1, 0.5], [1.5, 0.5], [2, 1], [3, 0.5], [3.5, 0.5]], reps: 3, tempo: 80 }),
+      L('c7l4', 'Tečkovaný rytmus', 'Tečka prodlužuje notu o polovinu: tečkovaná čtvrťová trvá jeden a půl doby a za ní je krátká osmina („dlouhá – krátká“). Takový rytmus je třeba v „Óda na radost“ nebo v „Horské“.',
+        { type: 'rhythm', pattern: [[0, 1.5], [1.5, 0.5], [2, 1], [3, 1]], reps: 3, tempo: 80 }),
+      L('c7l5', 'Melodie v rytmu', 'Teď spojíme výšku i rytmus: poslechni si krátkou melodii a zopakuj ji přesně v čase. Hodnotí se tóny i nástupy.',
+        { type: 'callResponse', degrees: [1, 1, 3, 5, 3, 1], durs: [0.5, 0.5, 1, 1, 1, 2], reps: 3, tempo: 84, cueBeats: 2 }),
+    ],
+  },
+  {
+    id: 'c8', n: 8, title: 'Rozšiřování rozsahu', icon: '📈', songs: ['cesta-domu', 'na-vrcholu'],
+    intro: 'Sirény, lehký hlas a přechod do falzetu – bezpečně.',
+    lessons: [
+      L('c8l1', 'Siréna nahoru', 'Siréna je plynulé klouzání hlasem jako houkačka. Klouzej na „u“ plynule od dolního tónu k hornímu podle žluté čáry, bez schodů a bez tlaku. Sirény rozehřívají hlasivky a spojují rejstříky.',
+        { type: 'siren', fromDeg: 1, toDeg: 5, reps: 3, glideBeats: 4, tempo: 72, sylText: 'u' }),
+      L('c8l2', 'Siréna dolů', 'Teď klouzej shora dolů. Na konci nepouštěj oporu – hlas má dojet na dolní tón, ne „spadnout“. Zpívej potichu a uvolněně.',
+        { type: 'siren', fromDeg: 5, toDeg: 1, reps: 3, glideBeats: 4, tempo: 72, sylText: 'u' }),
+      L('c8l3', 'Siréna přes oktávu', 'Siréna nahoru a zpět přes celou oktávu. V místě, kde se hlas „láme“, zesláb a pokračuj lehce. Nikdy nejdi výš, než je pohodlné – aplikace tě nad změřený rozsah nepustí.',
+        { type: 'siren', fromDeg: 1, toDeg: 8, backDeg: 1, reps: 2, glideBeats: 5, tempo: 72, sylText: 'u', extended: true }),
+      L('c8l4', 'Do lehkého hlasu (falzet)', 'Falzet je lehký, vzdušný hlas, ve kterém kmitají jen okraje hlasivek. Klouzej z pohodlné výšky nahoru na „ú“ a nech hlas přepnout do lehkého zvuku – jako sova. Zpívej potichu; při jakémkoli škrábání přestaň.',
+        { type: 'siren', fromDeg: 5, toDeg: 10, reps: 2, glideBeats: 5, tempo: 66, sylText: 'ú', falsetto: true }),
+      L('c8l5', 'Rty „brrr“ na arpeggiu', 'Bublání rty („brrr“, jako motorka) snižuje tlak na hlasivky a pomáhá plynule projít rejstříky. Drž rty uvolněné, případně si prsty lehce podepři tváře. Zpívej arpeggio do–mi–sol–mi–do.',
+        { type: 'arpeggio', degrees: [1, 3, 5, 3, 1], durs: [1, 1, 1, 1, 2], reps: 4, tempo: 84, syl: 'brr' }),
+    ],
+  },
+  {
+    id: 'c9', n: 9, title: 'Dynamika a výraz', icon: '🎚️', songs: ['rybar', 'svatojanska', 'letni-vitr', 'konec-dne'],
+    intro: 'Zesilování, zeslabování a vázaný zpěv.',
+    lessons: [
+      L('c9l1', 'Crescendo', 'Crescendo znamená postupně zesilovat. Začni potichu a přidávej dechem, ne tlakem v krku – výška tónu se nesmí zvednout. Sleduj žlutý pás hlasitosti.',
+        { type: 'dynamics', curve: 'cresc', degree: 3, holdBeats: 8, reps: 2, rangeDb: 12, tempo: 70 }),
+      L('c9l2', 'Decrescendo', 'Decrescendo je postupné zeslabování. Při zeslabení tón často klesá – drž ho nahoře a oporu nepouštěj až do konce.',
+        { type: 'dynamics', curve: 'decresc', degree: 3, holdBeats: 8, reps: 2, rangeDb: 12, tempo: 70 }),
+      L('c9l3', 'Messa di voce', 'Messa di voce je klasické cvičení: potichu – nahlas – potichu na jednom tónu. Učí hlas plynule měnit sílu při stejné výšce a barvě.',
+        { type: 'dynamics', curve: 'messa', degree: 3, holdBeats: 10, reps: 2, rangeDb: 12, tempo: 70 }),
+      L('c9l4', 'Legato', 'Legato znamená vázaně – tóny na sebe navazují bez mezer, jako jedna dlouhá linka. Neodděluj je dechem ani souhláskami, jen plynule měň výšku.',
+        { type: 'scale', degrees: [1, 2, 3, 4, 5, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 1, 1, 2], reps: 3, tempo: 66, syl: 'a', gapBeats: 1 }),
+      L('c9l5', 'Staccato', 'Staccato jsou krátké, odsazené tóny. Každý tón nasaď lehce bránicí (jako tichý smích „ha“), ale přesně na výšce. Mezi tóny je ticho.',
+        { type: 'scale', degrees: [1, 3, 5, 3, 1], durs: [0.5, 0.5, 0.5, 0.5, 1], reps: 4, tempo: 84, syl: 'a' }),
+    ],
+  },
+  {
+    id: 'c10', n: 10, title: 'Sluch', icon: '👂', songs: ['zebricek', 'ozvena'],
+    intro: 'Poznávání intervalů a opakování melodií po sluchu.',
+    lessons: [
+      L('c10l1', 'Sekunda, nebo tercie?', 'Uslyšíš dva tóny po sobě. Sekunda je krok (do–re), tercie skok přes jeden tón (do–mi). Pomůže představa začátku písní: sekunda „Dobré ráno“, tercie „Na louce“.',
+        { type: 'earInterval', intervals: [2, 4], count: 8 }),
+      L('c10l2', 'Kvarta, kvinta, oktáva', 'Tři „čisté“ intervaly. Kvarta zní jako začátek pochodu, kvinta jako „Hvězdičko“ (do–sol) a oktáva jako stejný tón výš. Zkus si interval v duchu zazpívat, než odpovíš.',
+        { type: 'earInterval', intervals: [5, 7, 12], count: 9 }),
+      L('c10l3', 'Krátká melodie', 'Poslechni si krátkou melodii a zazpívej ji zpátky – jako ozvěna. Tři tóny stačí; důležité je slyšet, kam melodie jde (nahoru, dolů, nebo zůstává).',
+        { type: 'callResponse', degrees: [1, 2, 3], durs: [1, 1, 2], reps: 4, tempo: 80, syl: 'la', direction: 'updown' }),
+      L('c10l4', 'Delší melodie', 'Pět tónů se skoky – poslouchej celek a zapamatuj si ho jako slovo. Pokud zaváháš, zazpívej aspoň obrys melodie; přesnost přijde opakováním.',
+        { type: 'callResponse', degrees: [1, 3, 2, 4, 3, 1], durs: [1, 1, 1, 1, 1, 2], reps: 3, tempo: 80, syl: 'la' }),
+      L('c10l5', 'Dur, nebo moll?', 'Velká tercie (dur) zní jasně a vesele, malá tercie (moll) tmavěji a smutněji. Rozdíl je jen jeden půltón. Poslouchej a urči, která tercie zazněla.',
+        { type: 'earInterval', intervals: [3, 4], count: 8 }),
+    ],
+  },
+];
+
+export const ALL_LESSONS = CHAPTERS.flatMap((c) => c.lessons.map((l, i) => ({ ...l, chapter: c.id, chapterN: c.n, index: i })));
+export const lessonById = (id) => ALL_LESSONS.find((l) => l.id === id);
+export const chapterById = (id) => CHAPTERS.find((c) => c.id === id);
+
+/** Rozezpívky pro denní trénink. */
+export const WARMUPS = [
+  { id: 'w-hum', title: 'Bručení do–mi–sol', ex: { type: 'hold', degrees: [1, 3, 5], holdBeats: 2, reps: 2, syl: 'mm', tempo: 76 }, minutes: 1 },
+  { id: 'w-siren', title: 'Siréna nahoru a dolů', ex: { type: 'siren', fromDeg: 1, toDeg: 5, backDeg: 1, reps: 2, glideBeats: 3, tempo: 72, sylText: 'u' }, minutes: 1 },
+  { id: 'w-brr', title: 'Rty „brrr“ na stupnici', ex: { type: 'scale', degrees: [1, 2, 3, 4, 5, 4, 3, 2, 1], durs: [1, 1, 1, 1, 1, 1, 1, 1, 2], reps: 3, tempo: 96, syl: 'brr' }, minutes: 1.5 },
+  { id: 'w-123', title: 'Rozezpívka 1-2-3-2-1', ex: { type: 'scale', degrees: [1, 2, 3, 2, 1], durs: [1, 1, 1, 1, 2], reps: 4, tempo: 92, syl: 'nu' }, minutes: 1 },
+  { id: 'w-breath', title: 'Dech „sss“', ex: { type: 'breath', target: 10 }, minutes: 0.5 },
+];

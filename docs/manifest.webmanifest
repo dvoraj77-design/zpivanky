@@ -1,0 +1,19 @@
+{
+  "name": "Zpívánky",
+  "short_name": "Zpívánky",
+  "description": "Osobní aplikace na učení čistého zpěvu – ladička, kurz a písně. Funguje offline.",
+  "lang": "cs",
+  "id": "./",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1b1240",
+  "theme_color": "#1b1240",
+  "categories": ["music", "education"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
