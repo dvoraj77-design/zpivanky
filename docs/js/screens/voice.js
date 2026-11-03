@@ -3,7 +3,7 @@ import { html, useState, useEffect, useRef, useFrames, useInterval, useAppState,
 import { RangeChart } from '../ui/charts.js';
 import { state, saveProfile, updateProfileManual, saveProgress } from '../state.js';
 import { profileSummary, typeInfo, speakingPitch, extremeHeld, computeProfile, VOICE_TYPES } from '../core/voice.js';
-import { breathDuration } from '../core/scoring.js';
+import { breathDuration, breathOn, breathRef } from '../core/scoring.js';
 import { stdev, median, noteName } from '../core/music.js';
 import { engine } from '../audio/engine.js';
 import { recordAttempt } from '../core/progress.js';
@@ -85,17 +85,19 @@ export function VoiceTestScreen({ query }) {
   const S = STEPS[step];
   const startRec = async () => { await engine.ensureContext(); framesRef.current = []; const t0 = engine.now + 0.3; if (engine.testBuffer) engine.startTestInput(t0); setRec({ t0, started: performance.now() }); };
   const finishRec = () => {
-    const fr = framesRef.current.filter((f) => f.t >= 0);
+    const all = framesRef.current;
+    const ref = breathRef(all, 0);
+    const fr = all.filter((f) => f.t >= 0);
     engine.stopTestInput();
     setRec(null);
     let val = null;
     if (S.id === 'speak') val = speakingPitch(fr);
     if (S.id === 'low') val = extremeHeld(fr, 'low', 0.5);
     if (S.id === 'high' || S.id === 'falsetto') val = extremeHeld(fr, 'high', 0.5);
-    if (S.id === 'breath') val = breathDuration(fr, 0, 60);
+    if (S.id === 'breath') val = breathDuration(fr, 0, 60, { ref });
     if (S.id === 'control') {
-      const on = fr.filter((f) => f.hiss || f.voiced).map((f) => f.db);
-      const dur = breathDuration(fr, 0, 60);
+      const on = fr.filter((f) => breathOn(f, ref)).map((f) => f.db);
+      const dur = breathDuration(fr, 0, 60, { ref });
       val = on.length > 50 ? Math.round(Math.max(0, Math.min(100, 100 - (stdev(on) - 1.5) * 12)) * Math.min(1, dur / 6)) : null;
     }
     setRes({ ...res, [S.id]: val, ['_' + S.id]: true });
@@ -112,7 +114,7 @@ export function VoiceTestScreen({ query }) {
     if (!S) return null;
     if (S.id === 'low') { const x = extremeHeld(fr, 'low', 0.5); return { cur, best: x, label: 'Nejnižší držený' }; }
     if (S.id === 'high' || S.id === 'falsetto') { const x = extremeHeld(fr, 'high', 0.5); return { cur, best: x, label: 'Nejvyšší držený' }; }
-    if (S.id === 'breath' || S.id === 'control') return { secs: breathDuration(fr, 0, 60) };
+    if (S.id === 'breath' || S.id === 'control') return { secs: breathDuration(fr.filter((f) => f.t >= 0), 0, 60, { ref: breathRef(fr, 0) }) };
     return { cur };
   })();
   const finishAll = async () => {

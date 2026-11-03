@@ -226,11 +226,21 @@ export function scoreDynamics(targetFn, frames, start, end, refDb) {
 }
 
 // ---------- Dech („sss“) ----------
-export function breathDuration(frames, start, end, { maxGap = 0.35 } = {}) {
+/** Zní výdech / tón? ref = šumové pozadí změřené před začátkem (pak se nemění, aby dlouhé „sss“ nezmizelo). */
+export function breathOn(f, ref) {
+  if (f.voiced || f.hiss) return true;
+  return ref != null && f.db != null && f.db > ref + 8 && (f.zcr == null || f.zcr > 1500);
+}
+export function breathRef(frames, start) {
+  const pre = frames.filter((f) => f.t < start + 0.15 && f.floorDb != null).map((f) => f.floorDb);
+  if (!pre.length) return null;
+  return median(pre);
+}
+export function breathDuration(frames, start, end, { maxGap = 0.35, ref = breathRef(frames, start) } = {}) {
   let best = 0, curStart = null, lastOn = null;
   for (const f of frames) {
     if (f.t < start || f.t > end) continue;
-    const on = f.hiss || f.voiced;
+    const on = breathOn(f, ref);
     if (on) {
       if (curStart == null || f.t - lastOn > maxGap) curStart = f.t;
       lastOn = f.t;
@@ -240,8 +250,9 @@ export function breathDuration(frames, start, end, { maxGap = 0.35 } = {}) {
   return best;
 }
 export function scoreBreath(frames, start, end, targetSec) {
-  const dur = breathDuration(frames, start, end);
-  const on = frames.filter((f) => f.t >= start && f.t <= end && (f.hiss || f.voiced));
+  const ref = breathRef(frames, start);
+  const dur = breathDuration(frames, start, end, { ref });
+  const on = frames.filter((f) => f.t >= start && f.t <= end && breathOn(f, ref));
   const dbs = on.map((f) => f.db);
   const sd = dbs.length > 5 ? stdev(dbs) : 0;
   const lenScore = clamp((dur / targetSec) * 100, 0, 100);

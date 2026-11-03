@@ -10,7 +10,7 @@ let lastPost = 0;
 function handleChunk(samples, t) {
   for (let i = 0; i < samples.length; i++) { const a = Math.abs(samples[i]); if (a > peak) peak = a; }
   analyzer.process(samples, t, (r, raw) => {
-    batch.push({ t: r.t, midi: r.midi, voiced: r.voiced, db: r.db, floorDb: r.floorDb, onset: r.onset, hiss: r.hiss, clarity: raw.clarity, freq: raw.freq, rawMidi: r.rawMidi });
+    batch.push({ t: r.t, midi: r.midi, voiced: r.voiced, db: r.db, floorDb: r.floorDb, onset: r.onset, hiss: r.hiss, zcr: raw.zcr, clarity: raw.clarity, freq: raw.freq, rawMidi: r.rawMidi });
   });
   if (rec) {
     if (rec.start == null) rec.start = t - samples.length / sr;

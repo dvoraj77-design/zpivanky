@@ -8,7 +8,7 @@ import { playAttempt, renderMixWav, voiceWav } from '../app/playback.js';
 import { downloadBlob } from '../audio/wav.js';
 import { engine } from '../audio/engine.js';
 import { state, saveSettings, hpProfile } from '../state.js';
-import { centsText } from '../core/scoring.js';
+import { centsText, breathOn, breathRef } from '../core/scoring.js';
 import { noHeadphones } from '../app/builders.js';
 
 /**
@@ -252,15 +252,17 @@ export function BreathRun({ target = 10, steady = false, title, onExit, onResult
     if (el > target + 7) done();
     // automatický konec po 1,5 s ticha po výdechu
     const recent = sess.frames.filter((f) => f.t > el - 1.5 && f.t <= el);
-    const before = sess.frames.some((f) => f.t > 0.5 && (f.hiss || f.voiced));
-    if (el > 2 && before && recent.length > 20 && recent.every((f) => !f.hiss && !f.voiced)) done();
+    const ref0 = breathRef(sess.frames, 0);
+    const before = sess.frames.some((f) => f.t > 0.5 && breathOn(f, ref0));
+    if (el > 2 && before && recent.length > 20 && recent.every((f) => !breathOn(f, ref0))) done();
   });
   if (res) return html`<${ResultView} result=${res} opts=${{ tol: 50, items: [], audio: [], tempo: 60, countIn: 0 }} title=${title} extra=${extra} next=${next} onExit=${onExit} onRetry=${() => { setSess(null); setRes(null); setExtra(null); }} />`;
   const el = sess ? sess.elapsed() : -3;
   const frames = sess?.frames || [];
   const last = frames[frames.length - 1];
-  const on = last && (last.hiss || last.voiced);
-  const dur = sess ? (() => { let best = 0, s0 = null, lastOn = null; for (const f of frames) { if (f.t < 0) continue; if (f.hiss || f.voiced) { if (s0 == null || f.t - lastOn > 0.35) s0 = f.t; lastOn = f.t; best = Math.max(best, lastOn - s0); } } return best; })() : 0;
+  const ref = sess ? breathRef(frames, 0) : null;
+  const on = last && breathOn(last, ref);
+  const dur = sess ? (() => { let best = 0, s0 = null, lastOn = null; for (const f of frames) { if (f.t < 0) continue; if (breathOn(f, ref)) { if (s0 == null || f.t - lastOn > 0.35) s0 = f.t; lastOn = f.t; best = Math.max(best, lastOn - s0); } } return best; })() : 0;
   const pct = Math.min(100, (dur / target) * 100);
   return html`<div class="screen full">
     <div class="topbar"><button class="back" aria-label="Zavřít" onClick=${() => { sess?.finish(); onExit(); }}>✕</button><h2>${title}</h2></div>

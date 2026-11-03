@@ -232,7 +232,7 @@ export class BreathSession {
     await engine.ensureContext();
     this.t0 = engine.now + prepSec;
     this.frames = [];
-    this.unsub = engine.onFrames((fr) => { for (const f of fr) this.frames.push({ t: f.t - this.t0, db: f.db, hiss: f.hiss, voiced: f.voiced }); this._emit(); });
+    this.unsub = engine.onFrames((fr) => { for (const f of fr) this.frames.push({ t: f.t - this.t0, db: f.db, hiss: f.hiss, voiced: f.voiced, zcr: f.zcr, floorDb: f.floorDb }); this._emit(); });
     if (engine.testBuffer) engine.startTestInput(this.t0);
     this.state = 'running';
     this.started = performance.now();

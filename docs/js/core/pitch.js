@@ -167,7 +167,7 @@ export class PitchTracker {
     // aby se při dlouhém souvislém zpěvu „nezvedalo“ k hlasitosti hlasu
     const periodic = d.freq > 0 && d.clarity >= 0.6;
     if (db < this.floorDb) this.floorDb = this.floorDb * 0.7 + db * 0.3;
-    else if (!periodic) this.floorDb += Math.min(0.08, (db - this.floorDb) * 0.01);
+    else if (!periodic) this.floorDb += Math.min(0.05, (db - this.floorDb) * 0.002);
     if (this.floorDb < -90) this.floorDb = -90;
     const loud = db > this.absMinDb && db > this.floorDb + this.minDbAboveFloor;
     let candidate = loud && d.freq > 0 && d.clarity >= this.minClarity;
@@ -207,7 +207,7 @@ export class PitchTracker {
     }
     // sykavka / šum (např. „sss“): hlasité, nízká periodicita, vysoká hustota průchodů nulou
     const hiss = loud && !candidate && d.zcr > 1500;
-    return { t, midi: out, rawMidi: d.freq > 0 ? 69 + 12 * Math.log2(d.freq / 440) : null, freq: d.freq, clarity: d.clarity, db, floorDb: this.floorDb, voiced: out != null, onset, hiss };
+    return { t, midi: out, rawMidi: d.freq > 0 ? 69 + 12 * Math.log2(d.freq / 440) : null, freq: d.freq, clarity: d.clarity, db, floorDb: this.floorDb, voiced: out != null, onset, hiss, zcr: d.zcr };
   }
 }
 function med3(a, b, c) { return Math.max(Math.min(a, b), Math.min(Math.max(a, b), c)); }
