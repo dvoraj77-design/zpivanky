@@ -36,7 +36,7 @@ Repo už je veřejné, takže GitHub Pages fungují zdarma.
 
 ## Aktualizace
 
-Aplikace se aktualizuje sama: když ji otevřeš s internetem a je nová verze, nahoře se objeví **„Je k dispozici nová verze – Aktualizovat“**. Profil, pokrok, vlastní písně i nahrávky zůstávají (jsou v úložišti telefonu, ne v aplikaci). Pro jistotu si občas udělej **Já → Záloha a obnova → Vytvořit zálohu**.
+Aplikace se aktualizuje sama: každý push do `main` GitHub Pages za 1–2 minuty nasadí, a když pak aplikaci otevřeš s internetem, nahoře se objeví **„Je k dispozici nová verze – Aktualizovat“**. Když měníš soubory v `docs/` sám, spusť před commitem `npm run build` – jinak telefon změnu nepozná a dál použije verzi uloženou pro offline režim. Profil, pokrok, vlastní písně i nahrávky zůstávají (jsou v úložišti telefonu, ne v aplikaci). Pro jistotu si občas udělej **Já → Záloha a obnova → Vytvořit zálohu**.
 
 ## Co kde najdeš
 
@@ -66,7 +66,7 @@ npm run e2e
 npm run build
 ```
 
-`npm run build` přegeneruje seznam souborů pro offline režim (`docs/precache.js`) a verzi – spusť ho po každé změně v `docs/`. Dokumenty: [PLAN.md](PLAN.md), [COMPETITION.md](COMPETITION.md), [DECISIONS.md](DECISIONS.md), [SONG_FORMAT.md](SONG_FORMAT.md), [TESTING.md](TESTING.md), [PROGRESS.md](PROGRESS.md).
+`npm test` obsahuje i realistického syntetického zpěváka (vibrato, nasazení zespodu, souhlásky, ozvěna, šum, 16kHz Bluetooth, průsak doprovodu); `npm run e2e` pouští simulované zpěváky do aplikace v Chromiu, i na 4× zpomaleném procesoru. `npm run build` přegeneruje seznam souborů pro offline režim (`docs/precache.js`) a verzi – spusť ho po každé změně v `docs/`. Dokumenty: [PLAN.md](PLAN.md), [COMPETITION.md](COMPETITION.md), [DECISIONS.md](DECISIONS.md), [SONG_FORMAT.md](SONG_FORMAT.md), [TESTING.md](TESTING.md), [PROGRESS.md](PROGRESS.md).
 
 ## Licence zvuků a písma
 

@@ -143,8 +143,8 @@ export class PitchDetector {
  */
 export class PitchTracker {
   constructor(opts = {}) {
-    this.minClarity = opts.minClarity ?? 0.8;
-    this.minDbAboveFloor = opts.minDbAboveFloor ?? 9;
+    this.minClarity = opts.minClarity ?? 0.7;
+    this.minDbAboveFloor = opts.minDbAboveFloor ?? 8;
     this.absMinDb = opts.absMinDb ?? -62;
     this.hop = opts.hopSec || 0.01;
     this.floorDb = -70;
@@ -163,9 +163,11 @@ export class PitchTracker {
   /** @param {{freq:number,clarity:number,rms:number,zcr:number}} d @param {number} t čas středu okna */
   push(d, t) {
     const db = d.rms > 0 ? 20 * Math.log10(d.rms) : -120;
-    // šumové pozadí: rychle dolů, pomalu nahoru
+    // šumové pozadí: rychle dolů; nahoru jen z neperiodických snímků (šum, nádech, souhlásky),
+    // aby se při dlouhém souvislém zpěvu „nezvedalo“ k hlasitosti hlasu
+    const periodic = d.freq > 0 && d.clarity >= 0.6;
     if (db < this.floorDb) this.floorDb = this.floorDb * 0.7 + db * 0.3;
-    else this.floorDb += Math.min(0.05, (db - this.floorDb) * 0.002);
+    else if (!periodic) this.floorDb += Math.min(0.08, (db - this.floorDb) * 0.01);
     if (this.floorDb < -90) this.floorDb = -90;
     const loud = db > this.absMinDb && db > this.floorDb + this.minDbAboveFloor;
     let candidate = loud && d.freq > 0 && d.clarity >= this.minClarity;

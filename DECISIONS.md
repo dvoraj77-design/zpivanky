@@ -27,3 +27,5 @@ Každé rozhodnutí, které zadání neřešilo, jednou větou.
 23. **Nástup u opakovaného stejného tónu** se nehodnotí (nejde spolehlivě odlišit od pokračování předchozího tónu); hodnotí se jen výška.
 24. **Bez sluchátek** se písně automaticky přehrávají v režimu „poslechni → zazpívej“ a cvičení mají napřed ukázku; aplikace pozná reproduktor podle zvoleného profilu, testem „Slyší mikrofon doprovod?“ a nabídne přepnutí.
 25. **Detekce běží ve Web Workeru**, ne přímo ve zvukovém vlákně, aby výpočet nikdy nezpůsobil praskání doprovodu na pomalejším telefonu.
+26. **Šumové pozadí** se odhaduje jen z neperiodických snímků (šum, nádech, souhlásky), aby se při dlouhém souvislém zpěvu nezvedalo k hlasitosti hlasu; prah periodicity snížen na 0,7 a hlasitost nad šumem na 8 dB (ověřeno realistickým zpěvákem s ozvěnou, šumem ventilátoru a 16kHz Bluetooth mikrofonem).
+27. **Průsak doprovodu do mikrofonu** do −28 dB hodnocení nevadí; silnější (reproduktor) ano – proto režim „poslechni → zazpívej“ a test „Slyší mikrofon doprovod?“.
