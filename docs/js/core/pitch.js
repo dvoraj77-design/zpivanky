@@ -220,7 +220,22 @@ function med(arr) { const s = arr.slice().sort((x, y) => x - y); const h = s.len
 export class StreamAnalyzer {
   constructor(sampleRate, opts = {}) {
     this.inRate = sampleRate;
-    this.dec = sampleRate > 50000 ? 2 : 1;
+    // decimace 2:1 pro běžné vzorkování (44,1/48 kHz) – poloviční výpočet, přesnost stejná (hlas < 8 kHz)
+    this.dec = opts.decimate ?? (sampleRate >= 32000 ? 2 : 1);
+    if (this.dec === 2) {
+      const N = 31, M = (N - 1) / 2, fc = 0.22; // mezní frekvence jako podíl vstupní vzorkovací frekvence
+      this.taps = new Float32Array(N);
+      let sum = 0;
+      for (let k = 0; k < N; k++) {
+        const x = k - M;
+        const sinc = x === 0 ? 2 * fc : Math.sin(2 * Math.PI * fc * x) / (Math.PI * x);
+        const w = 0.42 - 0.5 * Math.cos((2 * Math.PI * k) / (N - 1)) + 0.08 * Math.cos((4 * Math.PI * k) / (N - 1));
+        this.taps[k] = sinc * w; sum += this.taps[k];
+      }
+      for (let k = 0; k < N; k++) this.taps[k] /= sum;
+      this.hist = new Float32Array(N * 2);
+      this.hpos = 0;
+    }
     this.sr = sampleRate / this.dec;
     this.detector = new PitchDetector(this.sr, opts);
     this.tracker = new PitchTracker({ ...opts, hopSec: 0 });
@@ -243,12 +258,16 @@ export class StreamAnalyzer {
     for (let i = 0; i < len; i++) {
       let v = input[i];
       if (this.dec === 2) {
-        // jednoduchý dolní propust + decimace 2:1
-        const s = 0.5 * (v + this.decPrev);
-        this.decPrev = v;
+        // FIR dolní propust (Blackmanovo okno) + decimace 2:1
+        const N = this.taps.length;
+        this.hist[this.hpos] = v; this.hist[this.hpos + N] = v;
+        this.hpos = (this.hpos + 1) % N;
         this.decPhase ^= 1;
         if (this.decPhase) continue;
-        v = s;
+        let acc = 0;
+        const h = this.hist, t = this.taps, o = this.hpos;
+        for (let k = 0; k < N; k++) acc += t[k] * h[o + k];
+        v = acc;
       }
       // posuvný buffer (kruhový)
       this.buf[this.filled % this.n] = v;

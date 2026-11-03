@@ -19,6 +19,7 @@ export function MeScreen() {
   const st = useAppState();
   const s = profileSummary(st.profile, st.settings.notation);
   const items = [
+    ['/help', '❓', 'Jak to funguje', 'Nápověda a vysvětlení od úplného začátku'],
     ['/voice', '🎙️', 'Můj hlas', `${typeInfo(st.profile.type).name} · ${s.range} · ${s.key}`],
     ['/progress', '📈', 'Pokrok', `Série ${streak(st.progress)} dní · ${totalMinutes(st.progress)} min celkem`],
     ['/recordings', '🎧', 'Nahrávky', 'Archiv, přehrání, porovnání, uložení WAV'],
@@ -191,6 +192,10 @@ export function SettingsScreen() {
       <${Toggle} label="Jemný rytmus (bicí)" on=${s.drums} onChange=${(v) => saveSettings({ drums: v })} />
       <${Toggle} label="Ukládat nahrávky" sub="Posledních 60 pokusů; označené ★ zůstávají" on=${s.saveRecordings} onChange=${(v) => saveSettings({ saveRecordings: v })} />
     </div>
+    <div class="section-title">Pro začátečníky</div>
+    <div class="card"><${Toggle} label="Režim pro začátečníky" sub="Vysvětlivky a tipy na obrazovkách" on=${s.beginner !== false} onChange=${(v) => saveSettings({ beginner: v })} />
+      ${(s.hiddenHints || []).length ? html`<button class="btn sm block" onClick=${() => saveSettings({ hiddenHints: [] })}>Znovu ukázat skryté tipy</button>` : null}
+      <a class="btn sm block mt8" href="#/help">❓ Jak to funguje</a></div>
     <div class="section-title">Návyky a zdraví hlasu</div>
     <div class="card">
       <label class="field">Denní cíl: ${s.dailyGoal} minut<input type="range" min="5" max="60" step="5" value=${s.dailyGoal} onInput=${(e) => { const v = parseInt(e.target.value, 10); saveSettings({ dailyGoal: v }); state.progress.dailyGoal = v; saveProgress(); }} /></label>

@@ -29,7 +29,7 @@ export function EarQuiz({ spec, title, onExit, onResult, next }) {
   const answer = (semi) => {
     if (picked != null) return;
     setPicked(semi);
-    const ok = semi === q.semi;
+    const ok = q.mode === 'compare' ? semi === Math.sign(q.semi) : semi === q.semi;
     setAnswers([...answers, ok]);
     if (!ok) setTimeout(() => play(q), 400);
   };
@@ -60,16 +60,17 @@ export function EarQuiz({ spec, title, onExit, onResult, next }) {
     <div class="progress-seg mb16">${plan.questions.map((_, k) => html`<i style=${`background:${k < answers.length ? (answers[k] ? '#a8dcc9' : '#f5c2ca') : k === i ? '#f0a35e' : '#e9e6df'}`}></i>`)}</div>
     <div class="card center col" style="align-items:center">
       <div style="font-size:54px">👂</div>
-      <p class="muted">${q.harmonic ? 'Dva tóny zazní současně.' : 'Dva tóny zazní po sobě.'} Jaký je to interval?</p>
+      <p class="muted">${q.mode === 'compare' ? 'Dva tóny zazní po sobě. Je druhý vyšší, nebo nižší?' : (q.harmonic ? 'Dva tóny zazní současně.' : 'Dva tóny zazní po sobě.') + ' Jaký je to interval?'}</p>
       <button class="btn block" onClick=${() => play()}>🔁 Přehrát znovu</button>
     </div>
     <div class="col mt16">${q.options.map((s) => {
-      const isPicked = picked === s, isRight = picked != null && s === q.semi;
+      const right = q.mode === 'compare' ? Math.sign(q.semi) : q.semi;
+      const isPicked = picked === s, isRight = picked != null && s === right;
       return html`<button class=${'btn block ' + (isRight ? 'good' : isPicked ? 'danger' : '')} onClick=${() => answer(s)}>
-        ${isRight ? '✓ ' : isPicked ? '✕ ' : ''}${spec.quality === 'third' || (q.options.length === 2 && q.options.includes(3) && q.options.includes(4)) ? (s === 3 ? 'Moll (malá tercie)' : 'Dur (velká tercie)') : INTERVAL_NAMES[s][0].toUpperCase() + INTERVAL_NAMES[s].slice(1)}
+        ${isRight ? '✓ ' : isPicked ? '✕ ' : ''}${q.mode === 'compare' ? (s > 0 ? 'Druhý tón je vyšší ⬆' : s < 0 ? 'Druhý tón je nižší ⬇' : 'Oba stejně vysoko =') : spec.quality === 'third' || (q.options.length === 2 && q.options.includes(3) && q.options.includes(4)) ? (s === 3 ? 'Moll (malá tercie)' : 'Dur (velká tercie)') : INTERVAL_NAMES[s][0].toUpperCase() + INTERVAL_NAMES[s].slice(1)}
       </button>`;
     })}</div>
-    ${picked != null ? html`<div class="card mt16 small">${picked === q.semi ? '✓ Správně!' : `Byla to ${INTERVAL_NAMES[q.semi]}.`} <span class="muted">${HINT[q.semi] || ''}</span>
+    ${picked != null ? html`<div class="card mt16 small">${q.mode === 'compare' ? (picked === Math.sign(q.semi) ? '✓ Správně!' : `Druhý tón byl ${q.semi > 0 ? 'vyšší' : q.semi < 0 ? 'nižší' : 'stejně vysoko'}.`) : picked === q.semi ? '✓ Správně!' : `Byla to ${INTERVAL_NAMES[q.semi]}.`} <span class="muted">${q.mode === 'compare' ? '' : HINT[q.semi] || ''}</span>
       <button class="btn primary block mt8" onClick=${nextQ}>${i + 1 >= plan.questions.length ? 'Výsledek' : 'Další →'}</button></div>` : null}
   </div>`;
 }

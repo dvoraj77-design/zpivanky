@@ -41,7 +41,7 @@ before(async () => { env = await launch({ port: 8181 }); });
 after(async () => { await env?.close(); });
 
 async function prep(page) {
-  await page.evaluate(() => window.zpTest.saveSettings({ onboarded: true, strictness: 'beginner', hpProfiles: [{ id: 'test', name: 'Test', type: 'wired', latencyMs: 0, calibrated: true }], activeHp: 'test', headphones: 'yes' }));
+  await page.evaluate(() => window.zpTest.saveSettings({ onboarded: true, strictness: 'beginner', hpProfiles: [{ id: 'test', name: 'Test', type: 'wired', latencyMs: 0, calibrated: true }], activeHp: 'test', headphones: 'yes', exTempo: 1, songTempo: 1 }));
 }
 async function go(page, h) { await page.evaluate(() => { location.hash = '#/about'; }); await sleep(150); await page.evaluate((h) => { location.hash = '#' + h; }, h); await sleep(400); }
 
@@ -76,6 +76,25 @@ test('všechny typy cvičení s přesným zpěvákem dají dobré hodnocení', a
     await page.getByRole('button', { name: /Další|Výsledek/ }).click();
   }
   await page.waitForFunction(() => window.zpTest.lastResult && window.zpTest.lastResult.kind === 'ear');
+  assert.deepEqual(env.errors, []);
+  await page.close();
+});
+
+test('Hudební nauka: kvíz → hvězdičky; kapitola 0: vyšší/nižší', async () => {
+  const page = await newPage(env, '/');
+  await prep(page);
+  await go(page, '/tlesson/t2l1');
+  const quizzes = await page.locator('.card:has(.label-caps)').count();
+  for (let i = 0; i < quizzes; i++) await page.locator('.card:has(.label-caps)').nth(i).locator('.btn.block').first().click();
+  await page.getByRole('button', { name: '✓ Hotovo' }).click();
+  await page.waitForSelector('text=správně');
+  const th = await page.evaluate(() => window.zpTest.state.progress.theory.t2l1);
+  assert.ok(th && th.best >= 0);
+  await go(page, '/lesson/c0l1');
+  await page.getByText('Začít cvičení').click();
+  for (let i = 0; i < 8; i++) { await page.locator('.col.mt16 .btn').first().click(); await page.getByRole('button', { name: /Další|Výsledek/ }).click(); }
+  await page.waitForFunction(() => window.zpTest.lastResult && window.zpTest.lastResult.kind === 'ear');
+  assert.ok(await page.evaluate(() => window.zpTest.state.progress.lessons.c0l1?.attempts >= 1));
   assert.deepEqual(env.errors, []);
   await page.close();
 });

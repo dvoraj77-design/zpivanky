@@ -24,7 +24,7 @@ export function PlanScreen({ minutes }) {
     if (it.kind === 'song') {
       const song = findSong(it.id);
       const shift = state.progress.songs[song.id]?.lastShift ?? recommendShifts(song.notes, state.profile)[0].shift;
-      return { song: true, opts: songSessionOpts(song, { shift, mode: 'sing' }), shift };
+      return { song: true, opts: songSessionOpts(song, { shift, mode: 'sing', factor: state.settings.songTempo ?? 0.7 }), shift };
     }
     if (!spec || ['earInterval', 'breath', 'voicetest'].includes(spec.type)) return { spec };
     return { spec, opts: exerciseSessionOpts(exercisePlan(spec, seed + idx)) };

@@ -1,5 +1,6 @@
 // Písně: knihovna, detail (tónina, tempo, režim), přehrávač, vlastní píseň (editor, nazpívání).
 import { html, useState, useEffect, useRef, useMemo, useAppState, navigate, TopBar, Seg, Sheet, toast, fmtNote, Stars, scoreClass, MicGate, useWakeLock, useInterval, Empty, Toggle } from '../ui/common.js';
+import { Hint, HelpBtn } from '../ui/hints.js';
 import { LEVELS } from '../data/songs.js';
 import { state, allSongs, findSong, saveSettings, saveCustomSong, deleteCustomSong, hpProfile } from '../state.js';
 import { recommendShifts } from '../core/voice.js';
@@ -56,7 +57,7 @@ function SongDetailInner({ song }) {
   const cfgKey = 'zp-song-' + song.id;
   const saved = (() => { try { return JSON.parse(localStorage.getItem(cfgKey) || 'null'); } catch { return null; } })();
   const [shift, setShift] = useState(saved?.shift ?? sp?.lastShift ?? recs[0].shift);
-  const [factor, setFactor] = useState(saved?.factor ?? 1);
+  const [factor, setFactor] = useState(saved?.factor ?? st.settings.songTempo ?? 0.7);
   const [mode, setMode] = useState(normalizeMode(saved?.mode));
   const [loopSel, setLoopSel] = useState('all');
   const [phraseSel, setPhraseSel] = useState(0);
@@ -103,6 +104,7 @@ function SongDetailInner({ song }) {
     <div class="card tight"><input type="range" min="0.5" max="1.2" step="0.05" value=${factor} onInput=${(e) => setFactor(parseFloat(e.target.value))} aria-label="Tempo" />
       <div class="row between tiny dim"><span>50 %</span><span>${Math.round(song.tempo * factor)} BPM</span><span>120 %</span></div></div>
     <div class="section-title">Režim</div>
+    <${Hint} id="song" help="modes" title="Jak zpívat píseň">Nejdřív si dej <b>Poslech</b>, pak <b>Zpívat</b> s vodicí melodií. Těžké místo procvič v <b>Nacvičit frázi</b>. Tónina se nastavila podle tvého hlasu (★), tempo začíná na 70 %.</${Hint}>
     <div class="list">${MODES.map(([v, l, d]) => html`<button class="item" style=${mode === v ? 'outline:2px solid var(--accent)' : ''} onClick=${() => setMode(v)}><div class="grow"><div class="t">${l}</div><div class="s">${d}</div></div>${mode === v ? html`<span class="c-acc">●</span>` : null}</button>`)}</div>
     <div class="section-title">Nastavení</div>
     <div class="card col">

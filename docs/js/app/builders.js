@@ -34,7 +34,7 @@ export function exerciseSessionOpts(plan, { guide = true } = {}) {
   }
   return {
     kind: plan.kind === 'ear' || plan.kind === 'voicetest' ? 'pitch' : plan.kind,
-    items: plan.items, audio, tempo: plan.tempo, bpb, countIn: plan.countIn ?? bpb,
+    items: plan.items, audio, tempo: plan.tempo, factor: state.settings.exTempo ?? 0.7, bpb, countIn: plan.countIn ?? bpb,
     metronome: !!plan.metronome, tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0,
     record: state.settings.saveRecordings, dyn: { curve: plan.curve, range: plan.range }, keyPc: plan.keyPc, hideCurve: plan.hideCurve,
   };

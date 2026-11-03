@@ -208,3 +208,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: 
 input[type=range]::-moz-range-track { height: 8px; border-radius: 4px; background: #e9e6df; }
 input[type=range]::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--good); }
 .iconbtn[disabled] { opacity: 0.35; pointer-events: none; }
+.hint { background: #f1eefc; border: 1px solid #e0daf8; color: #3d3570; border-radius: 16px; padding: 12px 14px; margin: 12px 0; }
+.hint-x { border: 0; background: transparent; color: #8c84b8; font-size: 16px; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; }
+.hint a { color: #5a4fb0; font-weight: 700; display: inline-block; margin-top: 6px; }

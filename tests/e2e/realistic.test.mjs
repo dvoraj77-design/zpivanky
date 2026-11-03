@@ -29,7 +29,7 @@ after(async () => { await env?.close(); });
 
 test('realistický zpěvák + 4× pomalejší procesor: cvičení i píseň dobře hodnocené, plynulé zobrazení', async () => {
   const page = await newPage(env, '/');
-  await page.evaluate(() => window.zpTest.saveSettings({ onboarded: true, strictness: 'beginner', hpProfiles: [{ id: 'test', name: 'Test', type: 'wired', latencyMs: 0 }], activeHp: 'test', headphones: 'yes' }));
+  await page.evaluate(() => window.zpTest.saveSettings({ onboarded: true, strictness: 'beginner', hpProfiles: [{ id: 'test', name: 'Test', type: 'wired', latencyMs: 0 }], activeHp: 'test', headphones: 'yes', exTempo: 1, songTempo: 1 }));
   const cdp = await env.ctx.newCDPSession(page);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   const runAndMeasure = async (hash, wav, clickLesson) => {

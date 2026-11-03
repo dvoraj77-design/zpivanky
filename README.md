@@ -28,6 +28,14 @@ Repo už je veřejné, takže GitHub Pages fungují zdarma.
 - Když jsi omylem zakázal: v Chromu klepni na ikonu vlevo od adresy → **Oprávnění → Mikrofon → Povolit**. U nainstalované aplikace: **Nastavení Androidu → Aplikace → Zpívánky (nebo Chrome) → Oprávnění → Mikrofon → Povolit**.
 - Zvuk se zpracovává jen v telefonu, nic se nikam neposílá.
 
+## Dva lidé (nebo víc)
+
+Každý telefon má svá data jen u sebe – profil hlasu, pokrok i nahrávky. Když chcete zpívat oba, nainstalujte si aplikaci každý na svůj telefon ze stejné adresy. Je to zdarma a data se nemíchají. Přenos na nový telefon: **Já → Záloha a obnova**.
+
+## Pro úplné začátečníky
+
+Režim pro začátečníky je zapnutý: na obrazovkách jsou vysvětlivky (jde je skrýt křížkem nebo vypnout v Nastavení). **Kurz → Zpěv** začíná kapitolou **0. Ovládni svůj hlas** a **Kurz → Hudební nauka** vysvětluje tón, noty, stupnice, rytmus, takt a akordy. Vše je shrnuté v **Já → Jak to funguje**.
+
 ## Sluchátka
 
 - Nejlepší je **drátový headset** (jack / USB-C): nejmenší zpoždění, mikrofon u pusy.
@@ -41,8 +49,8 @@ Aplikace se aktualizuje sama: každý push do `main` GitHub Pages za 1–2 minut
 ## Co kde najdeš
 
 - **Dnes** – denní trénink na 5 / 10 / 20 minut, pokračování v kurzu, rychlé nástroje.
-- **Kurz** – 10 kapitol od prvního tónu po rytmus, rozsah, dynamiku a sluch; hvězdičky, odemykání (lze přeskočit).
-- **Písně** – 4 úrovně, doporučená tónina pro tvůj hlas, tempo 50–120 %, režimy (poslech, s vodicí melodií, sám, vystoupení, čekej na mě, poslechni → zazpívej), smyčka fráze, karaoke, mixážní pult, vlastní písně (editor i nazpívání).
+- **Kurz** – Zpěv (11 kapitol od úplné nuly po rytmus, rozsah, dynamiku a sluch; hvězdičky, odemykání, lze přeskočit) a Hudební nauka (10 kapitol pro laiky).
+- **Písně** – 4 úrovně, doporučená tónina pro tvůj hlas, tempo 50–120 %, režimy Zpívat (vodicí melodie ON/OFF), Nacvičit frázi a Poslech, smyčka fráze, karaoke, mixážní pult, vlastní písně (editor i nazpívání).
 - **Ladička** – nota, oktáva, centy, křivka posledních 10 s, bourdon, klepnutím uslyšíš notu.
 - **Já** – hlasový profil a test hlasu, pokrok a odznaky, archiv nahrávek (porovnání, uložení WAV), zvuk a sluchátka, nástroje, nastavení, záloha, diagnostika.
 

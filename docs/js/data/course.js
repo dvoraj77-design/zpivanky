@@ -5,6 +5,26 @@ const L = (id, title, text, ex, extra = {}) => ({ id, title, text, ex, ...extra 
 
 export const CHAPTERS = [
   {
+    id: 'c0', n: 0, title: 'Ovládni svůj hlas', icon: '🌱', songs: ['tri-tony'],
+    intro: 'Úplně od nuly: vyšší a nižší tón, hlas nahoru a dolů, potichu a nahlas, barva.',
+    lessons: [
+      L('c0l1', 'Vysoký, nebo nízký?', 'Výška tónu je to, jestli zní „nahoře“ jako ptáček, nebo „dole“ jako medvěd. Uslyšíš dva tóny po sobě a řekneš, jestli je druhý vyšší, nebo nižší. Nic se nezpívá – jen posloucháš.',
+        { type: 'earCompare', intervals: [12, 7, 5], count: 8 }),
+      L('c0l2', 'Jemnější rozdíly', 'Teď jsou tóny blíž u sebe, někdy i stejně vysoko. Poslouchej pozorně a klidně si je pusť znovu. Kdo slyší rozdíl, ten ho brzy i zazpívá.',
+        { type: 'earCompare', intervals: [4, 2, 1], count: 8, same: true }),
+      L('c0l3', 'Zabruč tón', 'Nejsnazší způsob, jak trefit tón, je zabručet ho se zavřenými ústy: „mmm“. Poslechni si tón a zkus ho napodobit. Když ukazuje ▼, myslí si tón o kousek výš; při ▲ se uvolni a jdi níž.',
+        { type: 'match', degrees: [1, 1, 1], count: 3, holdBeats: 3, syl: 'mm', tempo: 66 }),
+      L('c0l4', 'Hlas nahoru a dolů', 'Výšku neděláš silou, ale představou tónu. Klouzej hlasem jako když se divíš: „Ó?“ – hlas sám vyjede nahoru – a zpátky dolů jako vzdech „óóó…“. Sleduj žlutou čáru a hlas posouvej plynule.',
+        { type: 'siren', fromDeg: 1, toDeg: 3, backDeg: 1, reps: 3, glideBeats: 3, tempo: 60, sylText: 'ó' }),
+      L('c0l5', 'Z mluvení do zpěvu', 'Zpěv je prodloužené mluvení. Řekni „máma“ a druhé „á“ protáhni, jako když voláš přes dvůr. Tón drž rovně – čára se nemá vlnit.',
+        { type: 'hold', degrees: [1], holdBeats: 4, reps: 3, syl: 'a', tempo: 60 }),
+      L('c0l6', 'Potichu a nahlas', 'Sílu hlasu dělá dech, ne krk. Začni úplně potichu, jako bys zpíval spícímu dítěti, a pomalu přidávej vzduch. Výška tónu má zůstat stejná.',
+        { type: 'dynamics', curve: 'cresc', degree: 1, holdBeats: 6, reps: 2, rangeDb: 10, sylText: 'a', tempo: 60 }),
+      L('c0l7', 'Barva hlasu', 'Barva je to, jak tón zní: tmavě (ú, ó) nebo světle (í, é). Mění se tvarem úst a jazyka. Drž jeden tón a pomalu měň samohlásky ú – ó – á – é – í; výška zůstává stejná.',
+        { type: 'hold', degrees: [1], holdBeats: 8, reps: 2, syl: 'u', tempo: 60 }),
+    ],
+  },
+  {
     id: 'c1', n: 1, title: 'Poznej svůj hlas', icon: '🎙️', songs: ['dobre-rano'],
     intro: 'Co je tón, jak funguje ladička a kde leží tvůj hlas.',
     lessons: [

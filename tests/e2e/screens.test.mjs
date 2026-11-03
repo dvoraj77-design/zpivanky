@@ -6,7 +6,7 @@ import { launch, newPage, sleep } from './helpers.mjs';
 
 const OUT = new URL('../../test-output/screens/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
-const ROUTES = ['/', '/welcome', '/course', '/course/c1', '/course/c6', '/lesson/c1l1', '/lesson/c2l1', '/lesson/c10l1', '/songs', '/song/tri-tony', '/song/cesta-domu', '/editor', '/tuner', '/me', '/voice', '/voicetest', '/progress', '/recordings', '/audio', '/calibrate', '/settings', '/backup', '/diag', '/about', '/tools', '/tools/metronome', '/tools/drone', '/tools/piano', '/tools/scales', '/ear', '/plan/5', '/plan/20'];
+const ROUTES = ['/', '/welcome', '/course', '/course/c1', '/course/c6', '/lesson/c1l1', '/lesson/c2l1', '/lesson/c10l1', '/songs', '/song/tri-tony', '/song/cesta-domu', '/editor', '/tuner', '/me', '/voice', '/voicetest', '/progress', '/recordings', '/audio', '/calibrate', '/settings', '/backup', '/diag', '/about', '/tools', '/tools/metronome', '/tools/drone', '/tools/piano', '/tools/scales', '/ear', '/plan/5', '/plan/20', '/course?part=theory', '/theory/t1', '/theory/t7', '/tlesson/t1l2', '/tlesson/t3l2', '/tlesson/t7l1', '/tlesson/t10l1', '/course/c0', '/lesson/c0l1', '/lesson/c0l4', '/help', '/help?s=voice'];
 
 let env;
 before(async () => { env = await launch({ port: 8141 }); });

@@ -35,7 +35,7 @@ after(async () => { await env?.close(); });
 async function prep(page, strictness = 'beginner') {
   await page.evaluate(async (strictness) => {
     const z = window.zpTest;
-    await z.saveSettings({ onboarded: true, strictness, saveRecordings: true, hpProfiles: [{ id: 'test', name: 'Test (bez zpoždění)', type: 'wired', latencyMs: 0, calibrated: true }], activeHp: 'test', headphones: 'yes' });
+    await z.saveSettings({ onboarded: true, strictness, saveRecordings: true, hpProfiles: [{ id: 'test', name: 'Test (bez zpoždění)', type: 'wired', latencyMs: 0, calibrated: true }], activeHp: 'test', headphones: 'yes', exTempo: 1, songTempo: 1 });
   }, strictness);
 }
 

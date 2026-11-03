@@ -4,7 +4,7 @@ import { degreeToSemis, SCALES, SOLF, pc, diatonicChord, transposeChordSym } fro
 export const EXERCISE_TYPES = {
   hold: 'Držený tón', match: 'Trefení tónu', scale: 'Stupnicový vzorec', arpeggio: 'Arpeggio', interval: 'Zazpívej interval',
   earInterval: 'Poznej interval sluchem', siren: 'Siréna', rhythm: 'Opakuj rytmus', callResponse: 'Zavolání → odpověď',
-  breath: 'Výdrž dechu', dynamics: 'Dynamika', voicetest: 'Test hlasu', free: 'Volný tón',
+  breath: 'Výdrž dechu', dynamics: 'Dynamika', voicetest: 'Test hlasu', free: 'Volný tón', earCompare: 'Vyšší, nebo nižší?',
 };
 
 const LA = { la: 'la', nu: 'nu', mi: 'mi', u: 'u', a: 'a', brr: 'brr', mm: 'mmm', pa: 'pa' };
@@ -205,6 +205,20 @@ export function buildExercise(spec, profile, o = {}) {
         const root = Math.round(Math.max(lo, Math.min(hi - semi, base + Math.floor(rand() * 5))));
         const harmonic = spec.harmonic && rand() < 0.5;
         plan.questions.push({ root, semi, options: ints, harmonic, quality });
+      }
+      break;
+    }
+    case 'earCompare': {
+      // vyšší, nebo nižší? (pro úplné začátečníky)
+      plan.kind = 'ear';
+      const ints = spec.intervals || [12, 7, 5, 4];
+      const count = spec.count || 8;
+      plan.questions = [];
+      for (let i = 0; i < count; i++) {
+        let semi = ints[Math.floor(rand() * ints.length)] * (rand() < 0.5 ? -1 : 1);
+        if (spec.same && rand() < 0.2) semi = 0;
+        const root = Math.round(Math.max(lo + Math.max(0, -semi), Math.min(hi - Math.max(0, semi), base + Math.floor(rand() * 5))));
+        plan.questions.push({ mode: 'compare', root, semi, options: spec.same ? [1, 0, -1] : [1, -1] });
       }
       break;
     }

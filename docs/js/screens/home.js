@@ -1,5 +1,6 @@
 // Dnes: denní trénink na jedno ťuknutí, pokračování v kurzu, série, rychlé nástroje.
 import { html, useState, useAppState, navigate, Stars, fmtNote } from '../ui/common.js';
+import { Hint, HelpBtn } from '../ui/hints.js';
 import { streak, minutesOn, nextLesson, dailyPlan, lessonState } from '../core/progress.js';
 import { allSongs, findSong } from '../state.js';
 import { profileSummary, typeInfo } from '../core/voice.js';
@@ -19,6 +20,7 @@ export function HomeScreen() {
   return html`<div class="screen">
     <div class="row between"><div><div class="small muted">${hello}</div><h1>Dnes</h1></div>
       <div class="row" style="gap:6px"><span class="badge y">🔥 ${s} ${s === 1 ? 'den' : s >= 2 && s <= 4 ? 'dny' : 'dní'}</span></div></div>
+    <${Hint} id="home" help="start" title="Vítej!">Úplně od nuly? Začni v <b>Kurzu</b> kapitolou <b>„Ovládni svůj hlas“</b> a k tomu <b>Hudební naukou</b>. Každý den stačí 5 minut – klepni na „5 min“.</${Hint}>
     <div class="card hero mt16">
       <div class="row between"><b>Dnešní trénink</b><span class="small">${today} / ${goal} min</span></div>
       <div class="bar mt8"><i style=${`width:${Math.min(100, (today / goal) * 100)}%`}></i></div>

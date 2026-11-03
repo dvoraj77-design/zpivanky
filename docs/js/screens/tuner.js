@@ -1,5 +1,6 @@
 // Živá ladička: nota, oktáva, centy (ručička + barva + symbol), křivka posledních 10 s na mřížce not, bourdon.
 import { html, useState, useEffect, useRef, useFrames, useInterval, useAppState, MicGate, fmtNote, useWakeLock, Seg } from '../ui/common.js';
+import { Hint, HelpBtn } from '../ui/hints.js';
 import { C } from '../ui/theme.js';
 import { setupCanvas } from '../ui/pitchroll.js';
 import { engine } from '../audio/engine.js';
@@ -62,6 +63,7 @@ export function TunerScreen() {
   const sym = disp.midi == null ? '' : disp.status === 'ok' ? '●' : disp.cents > 0 ? '▲' : '▼';
   return html`<div class="screen">
     <div class="row between mb8"><h1>Ladička</h1><span class="small muted">±${tol()} centů</span></div>
+    <${Hint} id="tuner" help="tuner" title="Jak na ladičku">Zazpívej libovolný tón. Velké písmeno je tón, číslo vedle je oktáva. Ručička uprostřed a zelená = přesně, ▼ = trochu níž, ▲ = trochu výš. Klepnutím na tón ho uslyšíš.</${Hint}>
     <${MicGate}>
       <div class="card center" style="padding:14px 12px">
         <button class="tuner-note" style="background:none;border:0;cursor:pointer;width:100%" onClick=${() => disp.midi != null && tapNote(disp.midi)} aria-label="Přehrát notu">
@@ -131,7 +133,7 @@ function Needle({ cents, color, active }) {
 function drawHistory(cv, viewCenter) {
   const { ctx, w, h } = setupCanvas(cv);
   ctx.fillStyle = C.canvas; ctx.fillRect(0, 0, w, h);
-  const now = engine.now;
+  const now = engine.smoothNow();
   const hist = engine.history;
   const span = 10;
   const voiced = hist.filter((f) => f.voiced && f.midi != null && f.t > now - 3);

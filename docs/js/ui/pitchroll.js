@@ -12,8 +12,10 @@ export function statusOf(dev, tol) {
 }
 const stColor = (s) => (s === 'ok' ? COL.good : s === 'near' ? COL.warn : s === 'off' ? COL.bad : COL.curve);
 
+// úsporné vykreslování pro slabší telefony (nastaví se samo podle rychlosti kreslení)
+export const perf = { low: (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3 };
 export function setupCanvas(cv) {
-  const dpr = Math.min(3, window.devicePixelRatio || 1);
+  const dpr = Math.min(perf.low ? 1.5 : 2, window.devicePixelRatio || 1);
   const r = cv.getBoundingClientRect();
   const w = Math.max(10, Math.round(r.width * dpr)), h = Math.max(10, Math.round(r.height * dpr));
   if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
@@ -146,12 +148,18 @@ export function drawRoll(ctx, w, h, m) {
 export function PitchRoll({ model, height = '100%' }) {
   const ref = useRef(null);
   useEffect(() => {
-    let raf;
+    let raf, n = 0, slow = 0;
     const loop = () => {
       const cv = ref.current;
-      if (cv) {
+      n++;
+      // při pomalém kreslení kresli jen každý druhý snímek (30 fps je pořád plynulé)
+      if (cv && (!perf.low || n % 2 === 0)) {
+        const t0 = performance.now();
         const { ctx, w, h } = setupCanvas(cv);
         try { drawRoll(ctx, w, h, model.current || model); } catch (e) { console.error(e); }
+        const dt = performance.now() - t0;
+        slow = dt > 9 ? slow + 1 : Math.max(0, slow - 1);
+        if (slow > 20 && !perf.low) perf.low = true;
       }
       raf = requestAnimationFrame(loop);
     };

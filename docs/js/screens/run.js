@@ -1,5 +1,6 @@
 // Obrazovka zpěvu (cvičení i písně) a výsledky.
 import { html, useState, useEffect, useRef, useWakeLock, useInterval, ScoreRing, Stars, Sheet, toast, fmtNote, fmtTime, scoreClass, MicGate, Seg, useImmersive } from '../ui/common.js';
+import { Hint, HelpBtn } from '../ui/hints.js';
 import { C, scoreHex, scoreFill } from '../ui/theme.js';
 import { PitchRoll, viewRange } from '../ui/pitchroll.js';
 import { DeviationChart, DynChart } from '../ui/charts.js';
@@ -133,6 +134,7 @@ export function RunScreen(props) {
       ${props.allowMix ? html`<button class="iconbtn" aria-label="Mixážní pult" onClick=${() => setShowMix(true)}>🎚️</button>` : null}
     </div>
     ${noHeadphones() && phase === 'ready' ? html`<div class="card warnc small">🔈 Hraješ z reproduktoru: mikrofon může slyšet doprovod i melodii, takže hodnocení bude méně přesné. Nejlepší je zpívat se sluchátky.</div>` : null}
+    ${phase === 'ready' ? html`<${Hint} id="player" help="roll" title="Jak to číst">Pruhy jsou tóny – čím výš, tím vyšší tón; pod nimi je text. Až pruh dojede ke svislé čáře, zpívej. Tvůj hlas je tečka: <b>●</b> přesně, <b>▼</b> jdi výš, <b>▲</b> jdi níž.</${Hint}>` : null}
     <div class="stage">
       ${view === 'karaoke' && props.karaoke ? html`<${Karaoke} lines=${props.karaoke} beat=${beat} items=${s.items} offset=${opts.countIn} />` : html`<${PitchRoll} model=${model} />`}
       ${countdown ? html`<div class="countdown">${countdown}</div>` : null}
@@ -237,6 +239,7 @@ export function ResultView({ result, opts, title, extra, next, onRetry, onExit }
     ${extra?.badges?.length ? html`<div class="card hero mt16 center"><div style="font-size:30px">🏅</div><b>Nový odznak: ${extra.badges.map((b) => b.title).join(', ')}</b></div>` : null}
     ${extra?.unlocked ? html`<div class="card infoc mt16 small">🔓 Odemkla se další lekce: <b>${extra.unlocked}</b></div>` : null}
     <div class="pill-tip mt16">💡 ${r.tip}</div>
+    <${Hint} id="result" help="score" title="Co znamená výsledek">Číslo v kruhu je přesnost 0–100 (85+ = ★★★). „Kde se zaměřit“ ukazuje skóre každé fráze – ▶ ji přehraje. Graf po notách: tóny vlevo jsi zpíval níž, vpravo výš, zelený pás je přesně.</${Hint}>
     ${r.pitch != null || r.rhythm != null ? html`<div class="grid2 mt16">
       ${r.pitch != null ? html`<div class="stat"><div class="k">Přesnost výšky</div><div class=${'v ' + scoreClass(r.pitch)}>${r.pitch}</div></div>` : null}
       ${r.rhythm != null ? html`<div class="stat"><div class="k">Rytmus a nástupy</div><div class=${'v ' + scoreClass(r.rhythm)}>${r.rhythm}</div></div>` : null}

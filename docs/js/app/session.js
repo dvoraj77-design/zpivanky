@@ -46,7 +46,7 @@ export class Session {
   displayBeat() {
     if (this.state === 'idle') return 0;
     const outLat = Math.max(0, this.lat - 0.03);
-    return this.transport.timeToBeat(engine.now - outLat);
+    return this.transport.timeToBeat(engine.smoothNow() - outLat);
   }
 
   async start() {

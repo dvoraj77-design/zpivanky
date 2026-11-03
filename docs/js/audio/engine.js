@@ -36,6 +36,16 @@ export class AudioEngine {
 
   get running() { return this.ctx && this.ctx.state === 'running'; }
   get now() { return this.ctx ? this.ctx.currentTime : 0; }
+  /** Plynulý čas pro animace: currentTime se na Androidu posouvá po skocích (po blocích zvuku), dopočítáme ho podle hodin prohlížeče. */
+  smoothNow() {
+    const c = this.ctx; if (!c) return 0;
+    const t = c.currentTime, p = performance.now();
+    if (t !== this._lt) { this._lt = t; this._lp = p; }
+    let est = this._lt + (p - this._lp) / 1000;
+    est = Math.min(est, t + 0.08);
+    if (this._sm == null || est > this._sm || this._sm - est > 0.25) this._sm = est;
+    return this._sm;
+  }
 
   async ensureContext() {
     if (!this.ctx) {

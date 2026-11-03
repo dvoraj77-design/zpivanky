@@ -12,12 +12,17 @@ import { AudioScreen, CalibrateScreen } from './screens/audio.js';
 import { ToolsScreen, MetronomeScreen, DroneScreen, PianoScreen, ScalesScreen, EarHub } from './screens/tools.js';
 import { OnboardingScreen } from './screens/onboarding.js';
 import { PlanScreen } from './screens/plan.js';
+import { TheoryChapterScreen, TheoryLessonScreen } from './screens/theory.js';
+import { HelpScreen } from './screens/help.js';
 import { dayKey } from './core/progress.js';
 
 const ROUTES = [
   [/^\/$/, () => html`<${HomeScreen} />`, 'home'],
   [/^\/welcome$/, () => html`<${OnboardingScreen} />`, null],
-  [/^\/course$/, () => html`<${CourseScreen} />`, 'course'],
+  [/^\/course$/, (m, q) => html`<${CourseScreen} query=${q} />`, 'course'],
+  [/^\/theory\/([\w-]+)$/, (m) => html`<${TheoryChapterScreen} id=${m[1]} />`, 'course'],
+  [/^\/tlesson\/([\w-]+)$/, (m) => html`<${TheoryLessonScreen} id=${m[1]} />`, 'course'],
+  [/^\/help$/, (m, q) => html`<${HelpScreen} query=${q} />`, 'me'],
   [/^\/course\/([\w-]+)$/, (m) => html`<${ChapterScreen} id=${m[1]} />`, 'course'],
   [/^\/lesson\/([\w-]+)$/, (m) => html`<${LessonScreen} id=${m[1]} />`, 'course'],
   [/^\/songs$/, () => html`<${SongsScreen} />`, 'songs'],

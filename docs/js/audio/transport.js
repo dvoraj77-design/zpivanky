@@ -11,7 +11,7 @@ export class Transport {
     this.loop = null; // {from, to}
     this.active = new Set();
     this.timer = null;
-    this.lookahead = 0.18;
+    this.lookahead = 0.3;
     this.onLoop = null; this.onEnd = null;
     this.length = 0;
     this.mute = {}; // inst/bus → bool
@@ -73,7 +73,7 @@ export class Transport {
       const e = this.events[this.idx++];
       if (this.mute[e.inst] || (e.bus && this.mute[e.bus])) continue;
       const when = seg.time + (e.t - seg.beat) * seg.spb;
-      if (when < now - 0.02) continue;
+      if (when < now - 0.12) continue; // výrazně opožděné (zaseknutý telefon) vynech
       const v = this.engine.playEvent(e, when, e.d * seg.spb, e.bus ? this.engine.bus[e.bus] : undefined);
       if (v) { this.active.add(v); setTimeout(() => this.active.delete(v), (when - now + e.d * seg.spb + 1) * 1000); }
     }
