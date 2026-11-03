@@ -33,3 +33,32 @@ export function steadyTone(path, midi, sec = 20, sr = 48000) {
   const s = render([{ t: 0, d: sec, midi, harmonics: HARM.vowelA, amp: 0.3 }], { sr, dur: sec });
   writeFileSync(path, wavBuffer(s, sr));
 }
+
+/** Rytmus: krátké „pa“ na každý nástup. */
+export function rhythmSinger(targets, { sr = 48000, midi = 52, offset = 0 } = {}) {
+  const notes = targets.map((t) => ({ t: t.start + offset, d: 0.16, midi, harmonics: HARM.vowelA, amp: 0.4 }));
+  return render(notes, { sr, dur: Math.max(...targets.map((t) => t.end)) + 1.5, noise: 0.002 });
+}
+/** Dynamika: tón s hlasitostí podle křivky (cresc/decresc/messa/steady), rozsah v dB. */
+export function dynamicsSinger(targets, curve, rangeDb = 12, { sr = 48000 } = {}) {
+  const dur = Math.max(...targets.map((t) => t.end)) + 1.5;
+  const out = new Float32Array(Math.round(dur * sr));
+  for (const t of targets) {
+    const seg = render([{ t: 0, d: t.end - t.start - 0.02, midi: t.midi, harmonics: HARM.vowelA, amp: 0.25 }], { sr, dur: t.end - t.start });
+    const n = seg.length;
+    for (let i = 0; i < n; i++) {
+      const x = i / n;
+      const rel = curve === 'cresc' ? -rangeDb / 2 + rangeDb * x : curve === 'decresc' ? rangeDb / 2 - rangeDb * x : curve === 'messa' ? (x < 0.5 ? -rangeDb / 2 + rangeDb * 2 * x : rangeDb / 2 - rangeDb * 2 * (x - 0.5)) : 0;
+      const k = Math.round(t.start * sr) + i;
+      if (k < out.length) out[k] += seg[i] * Math.pow(10, (rel - rangeDb / 2) / 20);
+    }
+  }
+  return out;
+}
+export function hissWav(path, sec, { sr = 48000, lead = 0.5, amp = 0.12 } = {}) {
+  const r = rng(4); const out = new Float32Array(Math.round((sec + lead + 2) * sr)); let p = 0;
+  for (let i = Math.round(lead * sr); i < Math.round((lead + sec) * sr); i++) { const w = r() * 2 - 1; out[i] = (w - p) * amp; p = w; }
+  writeFileSync(path, wavBuffer(out, sr));
+}
+export function writeWav(path, samples, sr = 48000) { writeFileSync(path, wavBuffer(samples, sr)); }
+export { render, HARM };

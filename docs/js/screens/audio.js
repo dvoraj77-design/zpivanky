@@ -137,7 +137,7 @@ export function CalibrateScreen() {
     <${MicGate}>
       ${phase === 'run' ? html`<div class="card mt16 center"><div style="font-size:80px;font-weight:900" class=${beat >= 4 ? 'c-acc' : 'dim'}>${beat < 0 ? '…' : beat < 4 ? 4 - beat : beat < 12 ? 'pa!' : '✓'}</div><div class="small muted">${beat < 4 ? 'odpočet' : `klik ${Math.min(8, beat - 3)} z 8`}</div></div>` : null}
       ${phase === 'done' && result ? html`<div class=${'card mt16 ' + (result.ok ? 'infoc' : 'warnc')}>
-        ${result.ok ? html`<div class="center"><div class="small muted">Naměřené zpoždění</div><div style="font-size:48px;font-weight:900">${result.ms} ms</div><div class="small muted">z ${result.n} nástupů, rozptyl ±${result.spread} ms</div></div>`
+        ${result.ok ? html`<div class="center"><div class="small muted">Naměřené zpoždění</div><div style="font-size:48px;font-weight:900" data-test="latency">${result.ms} ms</div><div class="small muted">z ${result.n} nástupů, rozptyl ±${result.spread} ms</div></div>`
           : html`<p>Zachytil jsem jen ${result.n} nástupů z 8. Řekni „pa“ hlasitěji a krátce, přesně s kliknutím.</p>`}</div>` : null}
     </${MicGate}>
     <div class="bottom-actions">

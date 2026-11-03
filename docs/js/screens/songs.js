@@ -174,8 +174,8 @@ export function SongEditor({ id }) {
     const tonicGuess = harmonize(notes, { bpb });
     if (chordsText.trim()) {
       const bars = chordsText.split('|').map((x) => x.trim()).filter(Boolean);
-      chords = bars.map((b, i) => ({ t: i * bpb, d: bpb, sym: b }));
-      for (const c of chords) parseChord(c.sym);
+      chords = expandBarChords(bars.map((b, i) => ({ t: i * bpb, d: bpb, sym: b })), bpb);
+      for (const c of chords) { try { parseChord(c.sym); } catch { throw new Error(`Nerozumím akordu „${c.sym}“. Piš např. C, Am, G7, F#m, Bb.`); } }
     } else chords = tonicGuess.chords;
     return { notes, chords, key: tonicGuess.key };
   };
@@ -183,7 +183,7 @@ export function SongEditor({ id }) {
   const save = async () => {
     try {
       const { notes, chords, key } = parse();
-      const fixed = expandBarChords(chords, bpb);
+      const fixed = chords;
       const song = buildCustomSong({ id: existing?.id || 'custom-' + Date.now(), title: title || 'Moje píseň', tempo, meter: [bpb, 4], notes, chords: fixed, lyricsText: lyrics, keyTonic: key.tonic, keyMode: key.mode });
       const errs = validateSong(song);
       if (errs.length) throw new Error(errs.join(', '));
