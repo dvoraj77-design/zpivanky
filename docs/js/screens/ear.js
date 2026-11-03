@@ -40,6 +40,7 @@ export function EarQuiz({ spec, title, onExit, onResult, next }) {
       const score = Math.round((correct / plan.questions.length) * 100);
       const r = { kind: 'ear', overall: score, stars: starsFor(score), label: gradeLabel(score), tip: score >= 85 ? 'Výborné ucho! Zkus těžší intervaly.' : 'Zpívej si intervaly v duchu – pomáhají začátky známých písní (viz nápověda).', seconds: plan.questions.length * 6, correct, total: plan.questions.length };
       setDone(r);
+      if (window.zpTest) window.zpTest.lastResult = r;
       if (onResult) setExtra(await onResult(r));
     } else setI(i + 1);
   };

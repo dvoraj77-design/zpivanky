@@ -32,7 +32,7 @@ export function RunScreen(props) {
     const s = new Session({ ...opts });
     sessRef.current = s;
     model.current = {
-      beat: () => (s.state === 'idle' ? opts.countIn - 0.6 : s.displayBeat()),
+      beat: () => (s.state === 'idle' ? Math.max(0, (s.targets[0]?.t ?? opts.countIn) - 1.2) : s.displayBeat()),
       items: s.items, curve: s.curve, lo: range.lo, hi: range.hi, keyPc: opts.keyPc, notation: state.settings.notation,
       pxPerBeat: Math.max(46, Math.min(90, 3200 / (opts.tempo || 80))), hideCurve: !!opts.hideCurve, tol: opts.tol, live: s.live, bpb: opts.bpb, results: s.results,
     };
@@ -50,6 +50,7 @@ export function RunScreen(props) {
       if (ss.state === 'done' && ss.result && !ss._handled) {
         ss._handled = true;
         if (ss.aborted) return;
+        if (window.zpTest) window.zpTest.lastResult = ss.result;
         setResult(ss.result);
         setPhase('result');
         if (props.onResult) { try { setExtra(await props.onResult(ss.result, ss)); } catch (e) { console.error(e); } }
@@ -69,6 +70,7 @@ export function RunScreen(props) {
     const s = sessRef.current;
     if (s.state === 'running') {
       const r = await s.finish(false);
+      if (window.zpTest) window.zpTest.lastResult = r;
       setResult(r); setPhase('result');
       if (props.onResult && !s._handled) { s._handled = true; try { setExtra(await props.onResult(r, s)); } catch (e) { console.error(e); } }
     }
@@ -242,7 +244,7 @@ export function BreathRun({ target = 10, steady = false, title, onExit, onResult
   useEffect(() => () => sess?.state === 'running' && sess.finish(), [sess]);
   const doneRef = useRef(false);
   const start = async () => { doneRef.current = false; const s = new BreathSession({ targetSec: target, steady }); await s.start(3); setSess(s); };
-  const done = async () => { if (doneRef.current) return; doneRef.current = true; const r = await sess.finish(); setRes(r); if (onResult) setExtra(await onResult(r)); };
+  const done = async () => { if (doneRef.current) return; doneRef.current = true; const r = await sess.finish(); if (window.zpTest) window.zpTest.lastResult = r; setRes(r); if (onResult) setExtra(await onResult(r)); };
   useEffect(() => {
     if (!sess || res) return;
     const el = sess.elapsed();

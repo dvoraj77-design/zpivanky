@@ -53,11 +53,12 @@ export function scorePitchTargets(targets, frames, opts = {}) {
     // nástup: první hlasový rámec v okolí začátku, který se blíží cíli
     let onsetDelay = null;
     const prev = targets[i - 1];
-    const legatoSame = prev && Math.abs(prev.end - tg.start) < 0.02 && Math.abs(prev.midi - tg.midi) < 0.5;
+    const legatoSame = prev && tg.start - prev.end < 0.15 && Math.abs(prev.midi - tg.midi) < 0.5;
+    const searchFrom = prev && prev.end > tg.start - 0.3 ? Math.max(tg.start - 0.3, prev.end - 0.02) : tg.start - 0.3;
     if (tg.checkOnset !== false && !legatoSame && !isGlide) {
       for (let j = fi; j < sorted.length && sorted[j].t <= tg.start + Math.min(0.6, dur); j++) {
         const f = sorted[j];
-        if (f.t < tg.start - 0.3) continue;
+        if (f.t < searchFrom) continue;
         if (!f.voiced || f.midi == null) continue;
         let c = (f.midi - tg.midi) * 100;
         if (octaveFree) c = foldCents(c);
