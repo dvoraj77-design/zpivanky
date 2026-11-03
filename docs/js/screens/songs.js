@@ -1,5 +1,5 @@
 // Písně: knihovna, detail (tónina, tempo, režim), přehrávač, vlastní píseň (editor, nazpívání).
-import { html, useState, useEffect, useRef, useMemo, useAppState, navigate, TopBar, Seg, Sheet, toast, fmtNote, Stars, scoreClass, MicGate, useWakeLock, useInterval, Empty } from '../ui/common.js';
+import { html, useState, useEffect, useRef, useMemo, useAppState, navigate, TopBar, Seg, Sheet, toast, fmtNote, Stars, scoreClass, MicGate, useWakeLock, useInterval, Empty, Toggle } from '../ui/common.js';
 import { LEVELS } from '../data/songs.js';
 import { state, allSongs, findSong, saveSettings, saveCustomSong, deleteCustomSong, hpProfile } from '../state.js';
 import { recommendShifts } from '../core/voice.js';
@@ -36,14 +36,12 @@ export function SongsScreen() {
   </div>`;
 }
 
-const MODES = [
-  ['listen', '👂 Poslech', 'Jen poslouchej – melodie i doprovod.'],
-  ['guided', '🎤 S vodicí melodií', 'Zpíváš spolu s vodicí melodií.'],
-  ['solo', '🎙️ Sám', 'Jen doprovod, melodie mlčí.'],
-  ['perform', '⭐ Vystoupení', 'Celá píseň s hodnocením, bez vodicí melodie.'],
-  ['wait', '⏳ Čekej na mě', 'Píseň počká, až tón trefíš.'],
-  ['alternate', '🔁 Poslechni → zazpívej', 'Fráze zazní, pak ji zazpíváš sám (i bez sluchátek).'],
+export const MODES = [
+  ['sing', '🎤 Zpívat', 'Doprovod hraje celou píseň bez zastavování. Vodicí melodii zapneš a vypneš tlačítkem při zpěvu.'],
+  ['phrase', '🔁 Nacvičit frázi', 'Jedna fráze hraje dokola, šipkami přejdeš na další. Ideální na těžká místa.'],
+  ['listen', '👂 Poslech', 'Jen poslouchej melodii s doprovodem, nic se nehodnotí.'],
 ];
+export const normalizeMode = (m) => (m === 'listen' || m === 'phrase' ? m : 'sing');
 
 export function SongDetail({ id }) {
   const song = findSong(id);
@@ -59,8 +57,10 @@ function SongDetailInner({ song }) {
   const saved = (() => { try { return JSON.parse(localStorage.getItem(cfgKey) || 'null'); } catch { return null; } })();
   const [shift, setShift] = useState(saved?.shift ?? sp?.lastShift ?? recs[0].shift);
   const [factor, setFactor] = useState(saved?.factor ?? 1);
-  const [mode, setMode] = useState(saved?.mode ?? 'guided');
+  const [mode, setMode] = useState(normalizeMode(saved?.mode));
   const [loopSel, setLoopSel] = useState('all');
+  const [phraseSel, setPhraseSel] = useState(0);
+  const [waitOn, setWaitOn] = useState(false);
   useEffect(() => { try { localStorage.setItem(cfgKey, JSON.stringify({ shift, factor, mode })); } catch { /* */ } }, [shift, factor, mode]);
   const base = recs[0].shift;
   const tr = transposeSong(song, shift);
@@ -69,8 +69,8 @@ function SongDetailInner({ song }) {
   const style = st.settings.notation === 'solf' ? 'cz' : st.settings.notation;
   const fits = rng.lo >= st.profile.comfortLow && rng.hi <= st.profile.comfortHigh;
   const outOfRange = rng.lo < st.profile.low || rng.hi > st.profile.highChest;
-  const go = () => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=${mode}&loop=${loopSel}`);
-  const loops = [['all', 'Celá píseň'], ...song.sections.filter((s) => s.type !== 'intro' && s.type !== 'outro').map((s, i) => ['s' + song.sections.indexOf(s), s.name]), ...song.phrases.map((p) => ['p' + p.index, `Fráze ${p.index + 1}: ${song.lyrics[p.index]?.text?.slice(0, 24) || ''}`])];
+  const go = () => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=${mode}&part=${loopSel}&ph=${phraseSel}&wait=${waitOn ? 1 : 0}`);
+  const loops = [['all', 'Celá píseň'], ...song.sections.filter((s) => s.type !== 'intro' && s.type !== 'outro').map((s) => ['s' + song.sections.indexOf(s), s.name + ' (dokola)'])];
   const preview = async () => {
     await engine.ensureContext(); await engine.loadInstruments().catch(() => {});
     const notes = tr.notes.slice(0, 10);
@@ -104,9 +104,11 @@ function SongDetailInner({ song }) {
       <div class="row between tiny dim"><span>50 %</span><span>${Math.round(song.tempo * factor)} BPM</span><span>120 %</span></div></div>
     <div class="section-title">Režim</div>
     <div class="list">${MODES.map(([v, l, d]) => html`<button class="item" style=${mode === v ? 'outline:2px solid var(--accent)' : ''} onClick=${() => setMode(v)}><div class="grow"><div class="t">${l}</div><div class="s">${d}</div></div>${mode === v ? html`<span class="c-acc">●</span>` : null}</button>`)}</div>
-    <div class="section-title">Smyčka a nastavení</div>
+    <div class="section-title">Nastavení</div>
     <div class="card col">
-      <label class="field">Co zpívat<select value=${loopSel} onChange=${(e) => setLoopSel(e.target.value)}>${loops.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>
+      ${mode === 'sing' ? html`<label class="field">Co zpívat<select value=${loopSel} onChange=${(e) => setLoopSel(e.target.value)}>${loops.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>` : null}
+      ${mode === 'phrase' ? html`<label class="field">Začít frází<select value=${phraseSel} onChange=${(e) => setPhraseSel(parseInt(e.target.value, 10))}>${song.phrases.map((p) => html`<option value=${p.index}>${p.index + 1}. ${song.lyrics[p.index]?.text || ''}</option>`)}</select></label>
+        <${Toggle} label="Čekat, až tón trefím" sub="Fráze se zastaví na každém tónu, dokud ho nezazpíváš" on=${waitOn} onChange=${setWaitOn} />` : null}
       <label class="field">Doprovod<select value=${st.settings.accStyle} onChange=${(e) => saveSettings({ accStyle: e.target.value })}>${Object.entries(STYLES).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select></label>
       <label class="field">Text<${Seg} options=${[['text', 'Text'], ['la', 'la'], ['nu', 'nu'], ['solf', 'do re mi']]} value=${st.settings.lyricsMode} onChange=${(v) => saveSettings({ lyricsMode: v })} /></label>
       <div class="row between"><span style="font-weight:700">Jemný rytmus (bicí)</span><${Seg} options=${[[true, 'Ano'], [false, 'Ne']]} value=${st.settings.drums} onChange=${(v) => saveSettings({ drums: v })} /></div>
@@ -139,21 +141,26 @@ function SongPlayInner({ song, query }) {
   const id = song.id;
   const shift = parseInt(query.get('shift') || '0', 10);
   const factor = parseFloat(query.get('f') || '1');
-  const mode = query.get('mode') || 'guided';
-  const loopSel = query.get('loop') || 'all';
+  const mode = normalizeMode(query.get('mode'));
+  const part = query.get('part') || 'all';
+  const ph = Math.max(0, Math.min(song.phrases.length - 1, parseInt(query.get('ph') || '0', 10)));
+  const wait = query.get('wait') === '1';
   const opts = useMemo(() => {
     let loop = null;
-    if (loopSel.startsWith('s')) { const s = song.sections[parseInt(loopSel.slice(1), 10)]; if (s) loop = { from: s.start, to: s.end }; }
-    if (loopSel.startsWith('p')) { const p = song.phrases[parseInt(loopSel.slice(1), 10)]; if (p) loop = { from: Math.floor(p.start), to: Math.ceil(p.end + 0.5) }; }
-    const o = songSessionOpts(song, { shift, factor, mode: mode === 'perform' ? 'solo' : mode, loop });
-    if (loop) o.items = o.items.filter((i) => i.t >= loop.from - 1e-6 && i.t < loop.to);
+    if (mode === 'sing' && part.startsWith('s')) { const s = song.sections[parseInt(part.slice(1), 10)]; if (s) loop = { from: s.start, to: s.end }; }
+    if (mode === 'phrase') { const p = song.phrases[ph]; if (p) loop = { from: Math.floor(p.start), to: Math.ceil(p.end) + 1 }; }
+    const o = songSessionOpts(song, { shift, factor, mode, loop, wait: mode === 'phrase' && wait });
+    if (mode === 'phrase') o.items = o.items.filter((i) => i.phrase === song.phrases[ph]?.index);
+    else if (loop) o.items = o.items.filter((i) => i.t >= loop.from - 1e-6 && i.t < loop.to);
     return o;
-  }, [id, shift, factor, mode, loopSel]);
+  }, [id, shift, factor, mode, part, ph, wait]);
   const tr = opts.song;
-  const lines = opts.alternate ? null : tr.lyrics;
   const onResult = (r) => (mode === 'listen' ? null : saveAttempt(r, { type: 'song', id: song.id, title: song.title, opts, mode, shift, factor }));
+  const goPhrase = (d) => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=phrase&ph=${ph + d}&wait=${wait ? 1 : 0}&auto=1`, true);
+  const phraseNav = mode === 'phrase' ? { i: ph, n: song.phrases.length, text: song.lyrics[ph]?.text || '', go: goPhrase } : null;
   return html`<${RunScreen} opts=${opts} title=${song.title} sub=${`${keyName(keyPc(tr.key.tonic), state.settings.notation === 'solf' ? 'cz' : state.settings.notation, tr.key.mode)} · ${MODES.find((m) => m[0] === mode)?.[1] || ''} · ${Math.round(factor * 100)} %`}
-    onExit=${() => navigate('/song/' + song.id, true)} onResult=${onResult} karaoke=${lines && state.settings.lyricsMode === 'text' ? lines : null} allowMix=${true} />`;
+    onExit=${() => navigate('/song/' + song.id, true)} onResult=${onResult} karaoke=${state.settings.lyricsMode === 'text' ? tr.lyrics : null} allowMix=${true}
+    guideToggle=${mode !== 'listen'} phraseNav=${phraseNav} autoStart=${query.get('auto') === '1'} />`;
 }
 
 // ---------------- Vlastní píseň ----------------

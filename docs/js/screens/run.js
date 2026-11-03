@@ -1,6 +1,6 @@
 // Obrazovka zpěvu (cvičení i písně) a výsledky.
 import { html, useState, useEffect, useRef, useWakeLock, useInterval, ScoreRing, Stars, Sheet, toast, fmtNote, fmtTime, scoreClass, MicGate, Seg, useImmersive } from '../ui/common.js';
-import { C, scoreHex } from '../ui/theme.js';
+import { C, scoreHex, scoreFill } from '../ui/theme.js';
 import { PitchRoll, viewRange } from '../ui/pitchroll.js';
 import { DeviationChart, DynChart } from '../ui/charts.js';
 import { Session, BreathSession } from '../app/session.js';
@@ -25,6 +25,10 @@ export function RunScreen(props) {
   const [view, setView] = useState(props.karaoke && state.settings.view === 'karaoke' ? 'karaoke' : 'roll');
   const sessRef = useRef(null);
   const model = useRef(null);
+  const [guideOn, setGuideOn] = useState(state.settings.guideOn !== false);
+  const [pScores, setPScores] = useState({});
+  const [bubble, setBubble] = useState(null);
+  const scoredRef = useRef(new Set());
   useWakeLock(phase === 'running');
   useImmersive();
 
@@ -59,12 +63,28 @@ export function RunScreen(props) {
     });
   };
   useEffect(() => { if (props.autoStart) start(); return () => { const s = sessRef.current; if (s && s.state === 'running') s.stop(); }; }, []);
-  useInterval(() => force((x) => x + 1), phase === 'running' ? 120 : null);
+  useInterval(() => {
+    force((x) => x + 1);
+    // průběžné skóre fráze hned po jejím dozpívání
+    const s = sessRef.current;
+    if (!s || s.state !== 'running' || opts.items.every((i) => i.listen)) return;
+    const b = s.displayBeat();
+    const byPhrase = new Map();
+    for (const t of s.targets) byPhrase.set(t.phrase, Math.max(byPhrase.get(t.phrase) ?? 0, t.t + t.d));
+    for (const [p, end] of byPhrase) {
+      const key = s.pass + ':' + p;
+      if (b > end + 0.35 && b < end + 3 && !scoredRef.current.has(key)) {
+        scoredRef.current.add(key);
+        const sc = s.phraseScore(p);
+        if (sc != null) { setPScores((x) => ({ ...x, [p]: sc })); setBubble({ p, sc, until: Date.now() + 2500 }); }
+      }
+    }
+  }, phase === 'running' ? 120 : null);
 
   const applyMix = () => {
     const m = state.settings.mix;
     if (!engine.bus) return;
-    engine.bus.accomp.gain.value = m.accomp; engine.bus.guide.gain.value = m.guide; engine.bus.metro.gain.value = m.metro;
+    engine.bus.accomp.gain.value = m.accomp; engine.bus.guide.gain.value = state.settings.guideOn === false ? 0 : m.guide; engine.bus.metro.gain.value = m.metro;
     engine.setMonitor(m.monitor > 0, m.monitor);
   };
   const stopNow = async () => {
@@ -77,6 +97,10 @@ export function RunScreen(props) {
     }
   };
   const abort = () => { const s = sessRef.current; if (s?.state === 'running') s.stop(); engine.setMonitor(false); onExit && onExit(); };
+  const toggleGuide = () => {
+    const v = !guideOn; setGuideOn(v); saveSettings({ guideOn: v });
+    if (engine.bus) engine.bus.guide.gain.setTargetAtTime(v ? state.settings.mix.guide : 0, engine.now, 0.03);
+  };
   const togglePause = () => {
     const s = sessRef.current; if (!s || s.state !== 'running') return;
     if (paused) { s.transport.resume(); setPaused(false); } else { s.transport.pause(); setPaused(true); }
@@ -108,10 +132,11 @@ export function RunScreen(props) {
       ${props.karaoke ? html`<button class="iconbtn" aria-label="Přepnout zobrazení" onClick=${() => { const v = view === 'roll' ? 'karaoke' : 'roll'; setView(v); saveSettings({ view: v }); }}>${view === 'roll' ? '🎤' : '🎼'}</button>` : null}
       ${props.allowMix ? html`<button class="iconbtn" aria-label="Mixážní pult" onClick=${() => setShowMix(true)}>🎚️</button>` : null}
     </div>
-    ${noHeadphones() && phase === 'ready' ? html`<div class="card warnc small">🔈 Hraješ z reproduktoru – použiju režim „poslechni → zazpívej“: nejdřív zazní, pak zpíváš sám.</div>` : null}
+    ${noHeadphones() && phase === 'ready' ? html`<div class="card warnc small">🔈 Hraješ z reproduktoru: mikrofon může slyšet doprovod i melodii, takže hodnocení bude méně přesné. Nejlepší je zpívat se sluchátky.</div>` : null}
     <div class="stage">
       ${view === 'karaoke' && props.karaoke ? html`<${Karaoke} lines=${props.karaoke} beat=${beat} items=${s.items} offset=${opts.countIn} />` : html`<${PitchRoll} model=${model} />`}
       ${countdown ? html`<div class="countdown">${countdown}</div>` : null}
+      ${bubble && bubble.until > Date.now() ? html`<div style=${`position:absolute;top:10px;right:10px;background:${scoreFill(bubble.sc)};color:var(--text);border-radius:14px;padding:6px 12px;font-weight:800;box-shadow:var(--shadow)`}>Fráze ${phrases.indexOf(bubble.p) + 1}: ${bubble.sc} ${bubble.sc >= 85 ? '●' : bubble.sc >= 60 ? '◐' : '○'}</div>` : null}
       ${opts.hideCurve && phase === 'running' ? html`<div class="small muted" style="position:absolute;top:8px;right:12px">🙈 Naslepo – křivku uvidíš až ve výsledku</div>` : null}
     </div>
     <div class="row between">
@@ -123,10 +148,14 @@ export function RunScreen(props) {
     <div class="progress-seg">${phrases.map((p, i) => {
       const ns = s.targets.filter((t) => t.phrase === p);
       const st = ns.map((t) => s.results[t.ri]).filter(Boolean);
-      const col = i + 1 < curPhrase ? C.goodFill : i + 1 === curPhrase && phase === 'running' ? C.curve : '#e9e6df';
+      const col = pScores[p] != null && !(i + 1 === curPhrase && phase === 'running') ? scoreFill(pScores[p]) : i + 1 === curPhrase && phase === 'running' ? C.curve : i + 1 < curPhrase ? C.goodFill : '#e9e6df';
       return html`<i style=${`background:${col}`}></i>`;
     })}</div>
-    <div class="row between small muted"><span>${fmtTime(Math.max(0, beat * spb))}</span><span style="font-weight:800;color:var(--text)">${phrases.length > 1 ? `Fráze ${Math.min(curPhrase, phrases.length)} / ${phrases.length}` : ''}</span><span>${fmtTime(total)}</span></div>
+    ${props.phraseNav ? html`<div class="row"><button class="iconbtn" aria-label="Předchozí fráze" disabled=${props.phraseNav.i <= 0} onClick=${() => props.phraseNav.go(-1)}>◀</button>
+      <div class="grow center"><div style="font-weight:800">Fráze ${props.phraseNav.i + 1} / ${props.phraseNav.n}</div><div class="tiny muted ellipsis">${props.phraseNav.text}</div></div>
+      <button class="iconbtn" aria-label="Další fráze" disabled=${props.phraseNav.i >= props.phraseNav.n - 1} onClick=${() => props.phraseNav.go(1)}>▶</button></div>` : null}
+    <div class="row between small muted"><span>${fmtTime(Math.max(0, beat * spb))}</span><span style="font-weight:800;color:var(--text)">${phrases.length > 1 && !props.phraseNav ? `Fráze ${Math.min(curPhrase, phrases.length)} / ${phrases.length}` : ''}</span><span>${fmtTime(total)}</span></div>
+    ${props.guideToggle ? html`<button class=${'btn block ' + (guideOn ? 'primary' : '')} style="min-height:46px" aria-pressed=${guideOn} onClick=${toggleGuide}>${guideOn ? '🎤 Vodicí melodie: ZAPNUTÁ' : '🔇 Vodicí melodie: VYPNUTÁ'}</button>` : null}
     ${phase === 'ready' ? html`<${MicGate} compact=${true}><button class="btn primary big block" onClick=${start}>▶ Začít</button></${MicGate}>
       <div class="tiny dim center">${hpProfile()?.name || ''} · zpoždění ${hpProfile()?.latencyMs ?? 0} ms</div>`
       : html`<div class="row"><button class="btn" style="flex:1" onClick=${togglePause}>${paused ? '▶ Pokračovat' : '⏸ Pauza'}</button><button class="btn primary" style="flex:1" onClick=${stopNow}>■ Hotovo</button></div>`}
@@ -160,7 +189,7 @@ export function MixSheet({ onClose, onChange }) {
     <h2>Mixážní pult</h2>
     ${row('accomp', 'Doprovod')}
     <div class="mt16 row between"><b>Vodicí melodie (Singer)</b>
-      <${Seg} options=${[['on', 'ON'], ['off', 'OFF']]} value=${m.guide > 0 ? 'on' : 'off'} onChange=${(v) => set('guide', v === 'on' ? 0.7 : 0)} /></div>
+      <${Seg} options=${[['on', 'ON'], ['off', 'OFF']]} value=${state.settings.guideOn !== false ? 'on' : 'off'} onChange=${(v) => { saveSettings({ guideOn: v === 'on' }).then(() => onChange && onChange()); setM({ ...m }); }} /></div>
     ${row('guide', 'Hlasitost vodicí melodie')}
     ${row('metro', 'Metronom')}
     ${row('monitor', 'Příposlech vlastního hlasu', 'Jen se sluchátky! Na Androidu má příposlech zpoždění, u Bluetooth velké.')}

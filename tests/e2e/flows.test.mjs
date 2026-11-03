@@ -124,10 +124,23 @@ test('kalibrace zpoždění: „pa“ 150 ms po kliku → ~150 ms', async () => 
   await page.close();
 });
 
-test('režimy písně se spustí bez chyb (poslech, čekej na mě, poslechni→zazpívej, smyčka fráze)', async () => {
+test('režimy písně (Zpívat, Nacvičit frázi, Poslech) se spustí bez chyb; vodicí melodie na přepínač; šipky frází', async () => {
   const page = await newPage(env, '/');
   await prep(page);
-  for (const q of ['mode=listen&loop=all', 'mode=wait&loop=all', 'mode=alternate&loop=all', 'mode=guided&loop=p1', 'mode=solo&loop=s1&f=0.6']) {
+  // nacvičit frázi: šipka na další frázi spustí další frázi
+  await go(page, '/play/ukolebavka?shift=-10&f=1&mode=phrase&ph=0');
+  await page.getByRole('button', { name: '▶ Začít' }).click();
+  await sleep(1500);
+  await page.getByRole('button', { name: 'Další fráze' }).click();
+  await sleep(1500);
+  assert.match(await page.evaluate(() => location.hash), /ph=1/);
+  assert.ok(await page.evaluate(() => window.zpTest.engine.ctx.state === 'running'));
+  await page.getByRole('button', { name: /Vodicí melodie: ZAPNUTÁ/ }).click();
+  assert.equal(await page.evaluate(() => window.zpTest.state.settings.guideOn), false);
+  await page.getByRole('button', { name: /Vodicí melodie: VYPNUTÁ/ }).click();
+  await page.getByRole('button', { name: '■ Hotovo' }).click();
+  await page.waitForSelector('.ring', { timeout: 10000 });
+  for (const q of ['mode=listen&part=all', 'mode=sing&part=all', 'mode=phrase&ph=1&wait=1', 'mode=sing&part=s1&f=0.6']) {
     await go(page, `/play/ukolebavka?shift=-10&f=1&${q}`);
     await page.getByRole('button', { name: '▶ Začít' }).click();
     await sleep(3500);

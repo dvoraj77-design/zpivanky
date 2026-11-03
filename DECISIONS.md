@@ -29,3 +29,6 @@ Každé rozhodnutí, které zadání neřešilo, jednou větou.
 25. **Detekce běží ve Web Workeru**, ne přímo ve zvukovém vlákně, aby výpočet nikdy nezpůsobil praskání doprovodu na pomalejším telefonu.
 26. **Šumové pozadí** se odhaduje jen z neperiodických snímků (šum, nádech, souhlásky), aby se při dlouhém souvislém zpěvu nezvedalo k hlasitosti hlasu; prah periodicity snížen na 0,7 a hlasitost nad šumem na 8 dB (ověřeno realistickým zpěvákem s ozvěnou, šumem ventilátoru a 16kHz Bluetooth mikrofonem).
 27. **Průsak doprovodu do mikrofonu** do −28 dB hodnocení nevadí; silnější (reproduktor) ano – proto režim „poslechni → zazpívej“ a test „Slyší mikrofon doprovod?“.
+28. **Režimy písní zjednodušeny na 3** (na přání): Zpívat (doprovod nonstop, vodicí melodie velkým tlačítkem ON/OFF, výchozí ON), Nacvičit frázi (smyčka jedné fráze, šipky na další, volitelně „čekat na tón“), Poslech. Režimy „poslechni → zazpívej“ a „čekej na mě“ jako samostatné odstraněny; bez sluchátek aplikace jen upozorní, nic nepřepíná.
+29. **Průběžné skóre fráze** se ukáže hned po jejím dozpívání (bublina + barva proužku).
+30. **Export z archivu**: jen hlas, hlas s doprovodem, nebo balíček pro ladění (hlas + křivka + cíle + nastavení) – pro vzdálené ladění hodnocení.

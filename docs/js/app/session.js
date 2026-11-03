@@ -136,6 +136,18 @@ export class Session {
     this._emit();
   }
 
+  /** Rychlé skóre jedné fráze (průběžně během zpěvu). */
+  phraseScore(phrase) {
+    const spb = this.spb;
+    const tg = this.targets.filter((t) => t.phrase === phrase && t.kind !== 'rhythm');
+    if (!tg.length) return null;
+    const pass = this.pass;
+    const fs = this.frames.filter((f) => (!this.o.loop || f.pass === pass) && f.beat >= tg[0].t - 1 && f.beat <= tg[tg.length - 1].t + tg[tg.length - 1].d + 0.5)
+      .map((f) => ({ t: f.beat * spb, midi: f.midi, voiced: f.voiced }));
+    const notes = scorePitchTargets(tg.map((t) => ({ start: t.t * spb, end: (t.t + t.d) * spb, midi: t.midi, toMidi: t.toMidi, kind: t.kind, phrase: t.phrase, syl: t.syl, checkOnset: !this.o.waitMode })), fs, { tol: this.o.tol, octaveFree: this.o.octaveFree });
+    return summarize(notes, { tol: this.o.tol }).overall;
+  }
+
   stop() { return this.finish(true); }
 
   async finish(aborted = false) {

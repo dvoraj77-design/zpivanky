@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS = {
     { id: 'speaker', name: 'Reproduktor telefonu', type: 'speaker', latencyMs: 60, calibrated: false },
   ],
   activeHp: 'bt', onboarded: false, saveRecordings: true, lyricsMode: 'text',
-  mix: { accomp: 0.75, guide: 0.7, metro: 0.5, monitor: 0 }, view: 'roll', countIn: true, lastBreakReminder: 0,
+  mix: { accomp: 0.75, guide: 0.7, metro: 0.5, monitor: 0 }, guideOn: true, view: 'roll', countIn: true, lastBreakReminder: 0,
 };
 
 const listeners = new Set();

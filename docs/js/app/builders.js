@@ -17,20 +17,18 @@ function chordEvents(chords, bpb) {
 
 export function exercisePlan(spec, seed) {
   const s = { ...spec };
-  if (noHeadphones() && ['scale', 'arpeggio', 'interval', 'hold'].includes(s.type)) s.listenFirst = true;
   return buildExercise(s, state.profile, { seed, sylMode: s.syl || (state.settings.notation === 'solf' ? 'solf' : 'solf') });
 }
 
 export function exerciseSessionOpts(plan, { guide = true } = {}) {
   const bpb = plan.bpb || 4;
-  const nohp = noHeadphones();
   const audio = [];
-  if (!nohp || true) audio.push(...chordEvents(plan.chords, bpb).filter((e) => !nohp || plan.items.some((i) => i.listen && Math.abs(i.t - e.t) < 0.01)));
+  audio.push(...chordEvents(plan.chords, bpb));
   for (const it of plan.items) {
     if (it.listen) {
       if (plan.kind === 'rhythm') audio.push({ t: it.t, d: 0.05, midi: 84, inst: 'click', vel: 0.9, bus: 'accomp' });
       else audio.push({ t: it.t, d: it.d, midi: it.midi, toMidi: it.toMidi, inst: guideInst(), vel: 0.75, bus: 'accomp' });
-    } else if (guide && plan.guide && !nohp && it.kind !== 'rhythm') {
+    } else if (guide && plan.guide && it.kind !== 'rhythm') {
       audio.push({ t: it.t, d: it.d * 0.97, midi: it.midi, toMidi: it.toMidi, inst: guideInst(), vel: 0.6, bus: 'guide' });
     }
   }
@@ -43,29 +41,22 @@ export function exerciseSessionOpts(plan, { guide = true } = {}) {
 }
 
 /**
- * mode: 'listen' | 'guided' | 'solo' | 'perform' | 'alternate' | 'wait' | 'phrase'
+ * mode: 'sing' (doprovod + vodicí melodie na přepínač) | 'phrase' (smyčka fráze, volitelně čekání na tón) | 'listen'
  */
-export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'guided', loop = null, style, drums, bass, metronome = false } = {}) {
+export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', loop = null, wait = false, style, drums, bass, metronome = false } = {}) {
   const song = transposeSong(song0, shift);
   const bpb = song.meter[0];
   const st = style || state.settings.accStyle;
   const acc = st === 'none' ? [] : generateAccompaniment(song, { style: st, bass: bass ?? state.settings.bass, drums: drums ?? state.settings.drums });
   const guide = guideEvents(song, guideInst()).map((e) => ({ ...e, bus: 'guide' }));
   let items = song.notes.map((n) => ({ t: n.t, d: n.d, midi: n.p, syl: lyricSyl(n, song), phrase: n.phrase, kind: 'note', note: n }));
-  let audio = [...acc.map((e) => ({ ...e, bus: 'accomp' }))];
-  const nohp = noHeadphones();
+  const audio = [...acc.map((e) => ({ ...e, bus: 'accomp' }))];
   if (mode === 'listen') { items = items.map((i) => ({ ...i, listen: true })); audio.push(...guide.map((e) => ({ ...e, bus: 'accomp' }))); }
-  else if (mode === 'guided' || mode === 'wait' || mode === 'phrase') audio.push(...guide);
-  let length = song.length;
-  if (mode === 'alternate' || (nohp && mode !== 'listen')) {
-    const alt = alternateTimeline(song, acc, guide, items);
-    items = alt.items; audio = alt.audio; length = alt.length;
-  }
+  else audio.push(...guide);
   return {
     song, kind: 'pitch', items, audio, tempo: song.tempo, factor, bpb, countIn: bpb, metronome,
-    tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0, waitMode: mode === 'wait', loop,
-    record: mode !== 'listen' && state.settings.saveRecordings, keyPc: keyPc(song.key.tonic) + (song.key.mode === 'minor' ? 3 : 0), length,
-    alternate: mode === 'alternate' || (nohp && mode !== 'listen'),
+    tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0, waitMode: mode === 'phrase' && wait, loop,
+    record: mode !== 'listen' && state.settings.saveRecordings, keyPc: keyPc(song.key.tonic) + (song.key.mode === 'minor' ? 3 : 0), length: song.length,
   };
 }
 
@@ -79,28 +70,4 @@ function lyricSyl(n, song) {
     return SOLF[(((n.p - k) % 12) + 12) % 12];
   }
   return n.syl;
-}
-
-/** Režim „poslechni → zazpívej“: každá fráze nejdřív zazní, pak ji zpíváš sám (bez doprovodu). */
-export function alternateTimeline(song, acc, guide, items) {
-  const outItems = [], outAudio = [];
-  const firstNote = song.notes[0]?.t ?? 0;
-  // předehra beze změny
-  for (const e of acc) if (e.t < firstNote) outAudio.push({ ...e, bus: 'accomp' });
-  let cursor = firstNote;
-  const phrases = song.phrases.length ? song.phrases : [{ start: firstNote, end: song.length, index: 0 }];
-  for (const ph of phrases) {
-    const s = ph.start, e = Math.ceil((ph.end + 0.01) / 1) * 1;
-    const len = e - s;
-    for (const ev of acc) if (ev.t >= s && ev.t < e) outAudio.push({ ...ev, t: ev.t - s + cursor, d: Math.min(ev.d, e - ev.t), bus: 'accomp' });
-    for (const ev of guide) if (ev.t >= s && ev.t < e) outAudio.push({ ...ev, t: ev.t - s + cursor, bus: 'accomp' });
-    for (const it of items) if (it.t >= s && it.t < e) outItems.push({ ...it, t: it.t - s + cursor, listen: true });
-    cursor += len + 1;
-    // nápověda: první tón fráze krátce
-    for (const it of items) if (it.t >= s && it.t < e) outItems.push({ ...it, t: it.t - s + cursor, listen: false });
-    cursor += len + 1;
-  }
-  const tonic = acc.filter((e) => e.t >= song.length - song.meter[0] * 1.5);
-  for (const ev of tonic) outAudio.push({ ...ev, t: cursor + (ev.t - (song.length - song.meter[0])), bus: 'accomp' });
-  return { items: outItems, audio: outAudio.filter((e) => e.t >= 0), length: cursor + song.meter[0] };
 }

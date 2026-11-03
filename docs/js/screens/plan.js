@@ -24,7 +24,7 @@ export function PlanScreen({ minutes }) {
     if (it.kind === 'song') {
       const song = findSong(it.id);
       const shift = state.progress.songs[song.id]?.lastShift ?? recommendShifts(song.notes, state.profile)[0].shift;
-      return { song: true, opts: songSessionOpts(song, { shift, mode: 'guided' }), shift };
+      return { song: true, opts: songSessionOpts(song, { shift, mode: 'sing' }), shift };
     }
     if (!spec || ['earInterval', 'breath', 'voicetest'].includes(spec.type)) return { spec };
     return { spec, opts: exerciseSessionOpts(exercisePlan(spec, seed + idx)) };
@@ -32,7 +32,7 @@ export function PlanScreen({ minutes }) {
   if (idx >= 0 && idx < items.length && runOpts) {
     const title = it.title;
     const type = it.kind === 'lesson' ? 'lesson' : it.kind === 'song' ? 'song' : 'warmup';
-    const onResult = async (r) => { finish(idx, r); return saveAttempt(r, { type, id: it.id, title, opts: runOpts.opts, mode: 'guided', shift: runOpts.shift }); };
+    const onResult = async (r) => { finish(idx, r); return saveAttempt(r, { type, id: it.id, title, opts: runOpts.opts, mode: 'sing', shift: runOpts.shift }); };
     const exit = () => setIdx(-1);
     const spec = runOpts.spec;
     if (spec?.type === 'voicetest') return html`<div class="screen"><${TopBar} title=${title} onBack=${exit} />
@@ -43,7 +43,7 @@ export function PlanScreen({ minutes }) {
     if (spec?.type === 'breath') return html`<${BreathRun} key=${idx} target=${spec.target} steady=${spec.steady} title=${title} onExit=${exit} onResult=${onResult} next=${nextBtn} />`;
     const song = runOpts.song ? findSong(it.id) : null;
     return html`<${RunScreen} key=${idx} opts=${runOpts.opts} title=${title} sub=${`Dnešní trénink · ${idx + 1}/${items.length}`} onExit=${exit} onResult=${onResult} next=${nextBtn}
-      karaoke=${song && state.settings.lyricsMode === 'text' ? runOpts.opts.song.lyrics : null} allowMix=${!!song} />`;
+      karaoke=${song && state.settings.lyricsMode === 'text' ? runOpts.opts.song.lyrics : null} allowMix=${!!song} guideToggle=${true} />`;
   }
   const done = idx >= items.length;
   const icon = { warmup: '🔥', drill: '🎯', lesson: '📘', song: '🎵', ear: '👂' };
