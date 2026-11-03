@@ -13,8 +13,12 @@ Podle tohoto souboru se dá kdykoli navázat. Pořadí: celek → obsah → test
 - Testy: `npm test` (50 jednotkových), `npm run e2e` (simulovaný zpěvák, všechny typy cvičení, test hlasu, kalibrace, režimy písní, editor, archiv, záloha, obrazovky 390×844 a 412×915, offline, instalovatelnost).
 - `README.md`, `TESTING.md`.
 
-## Rozpracované
-- Finální běh celé e2e sady po redesignu, nasazení.
+- Finální běh: 50 jednotkových + 14 e2e testů zelených po redesignu; nasazeno do `main` (commit f98821a a novější).
 
-## Další kroky (bonusy, když zbude čas)
-- Jemné doladění vzhledu podle screenshotů, další drobnosti.
+## Čeká na uživatele
+- Jednorázově zapnout GitHub Pages: Settings → Pages → Deploy from a branch → `main` → `/docs` → Save (viz README).
+- Projít `TESTING.md` na telefonu se sluchátky.
+
+## Nápady pro fázi 2
+- Server: import písní (Spotify / soubor), oddělení vokálu, přepis melodie, akordy a časování textu → formát v `SONG_FORMAT.md` (`timing`, `audio.stems`, `analysis`).
+- Time-stretch/pitch-shift nahrávek, přehrávání stop místo syntetického doprovodu.
