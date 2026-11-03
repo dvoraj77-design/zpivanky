@@ -85,13 +85,21 @@ export function RecordingsScreen() {
     setPlaying(meta.id);
     setTimeout(() => setPlaying((p) => (p === meta.id ? null : p)), (meta.duration || 10) * 1000 + 500);
   };
-  const exportOne = async (meta, mix) => {
+  const [exp, setExp] = useState(null);
+  const exportOne = async (meta, kind) => {
     const r = await db.getRecording(meta.id);
+    const base = `zpivanky-${meta.itemId}-${meta.date.slice(0, 16).replace(/[:T]/g, '-')}`;
     try {
-      const blob = mix && r.opts ? await renderMixWav(r.opts, r) : voiceWav(r);
-      downloadBlob(blob, `zpivanky-${meta.itemId}-${meta.date.slice(0, 10)}.wav`);
+      if (kind === 'debug') {
+        const blob = new Blob([JSON.stringify(debugPackage(r))], { type: 'application/json' });
+        downloadBlob(blob, base + '-ladeni.json');
+      } else {
+        const blob = kind === 'mix' && r.opts ? await renderMixWav(r.opts, r) : voiceWav(r);
+        downloadBlob(blob, base + (kind === 'mix' ? '-s-doprovodem' : '-hlas') + '.wav');
+      }
       toast('Uloženo do Stažených souborů.');
     } catch (e) { toast('Export selhal: ' + e.message); }
+    setExp(null);
   };
   const del = async (meta) => { if (!confirm('Smazat nahrávku?')) return; await db.deleteRecording(meta.id); load(); };
   const star = async (meta) => { await db.updateRecordingMeta(meta.id, { starred: !meta.starred }); load(); };
@@ -108,10 +116,32 @@ export function RecordingsScreen() {
       <div class="row" style="width:100%;gap:6px">
         <button class="btn sm grow" onClick=${() => (playing === m.id ? stop() : play(m, false))}>${playing === m.id ? '■' : '▶ Hlas'}</button>
         <button class="btn sm grow" onClick=${() => play(m, true)}>▶ S cílem</button>
-        <button class="btn sm" onClick=${() => exportOne(m, true)} aria-label="Uložit WAV">💾</button>
+        <button class="btn sm" onClick=${() => setExp(m)} aria-label="Uložit WAV">💾</button>
         <button class="btn sm danger" onClick=${() => del(m)} aria-label="Smazat">🗑</button>
       </div></div>`)}</div>
+    ${exp ? html`<${Sheet} onClose=${() => setExp(null)}><h2>Uložit nahrávku</h2><p class="small muted mt8">${exp.title} · ${fmtDate(exp.date)}</p>
+      <div class="col mt16">
+        <button class="btn block" onClick=${() => exportOne(exp, 'voice')}>🎙️ Jen hlas (WAV)</button>
+        <button class="btn block" onClick=${() => exportOne(exp, 'mix')}>🎵 Hlas s doprovodem (WAV)</button>
+        <button class="btn block" onClick=${() => exportOne(exp, 'debug')}>🩺 Balíček pro ladění (hlas + data)</button>
+        <p class="tiny dim">Balíček pro ladění obsahuje tvůj hlas, křivku, kterou aplikace slyšela, cíle a nastavení (tónina, tempo, zpoždění). Pošli ho, když hodnocení nesedí.</p>
+      </div></${Sheet}>` : null}
   </div>`;
+}
+
+function debugPackage(r) {
+  const pcm = r.pcm instanceof Int16Array ? r.pcm : new Int16Array(r.pcm);
+  const u8 = new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength);
+  let bin = '';
+  for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  const hp = state.settings.hpProfiles.find((h) => h.id === state.settings.activeHp);
+  const { pcm: _p, ...meta } = r;
+  return {
+    format: 'zpivanky-debug', version: 1, app: APP_VERSION, exportedAt: new Date().toISOString(), userAgent: navigator.userAgent,
+    recording: { ...meta, pcmB64: btoa(bin) },
+    settings: { strictness: state.settings.strictness, notation: state.settings.notation, guideInst: state.settings.guideInst, accStyle: state.settings.accStyle, headphones: state.settings.headphones, mix: state.settings.mix, micDeviceId: state.settings.micDeviceId ? 'vlastní' : 'výchozí' },
+    headphones: hp, profile: state.profile, engine: engine.diagnostics(),
+  };
 }
 
 function Compare({ ids, onClose }) {

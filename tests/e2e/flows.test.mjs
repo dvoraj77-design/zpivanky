@@ -192,7 +192,15 @@ test('archiv nahrávek; záloha (s nahrávkami) → smazání → obnova', async
   await page.getByRole('button', { name: '▶ S cílem' }).first().click();
   await sleep(800);
   await page.screenshot({ path: OUT + '/../recordings.png', fullPage: true });
-  const [wav] = await Promise.all([page.waitForEvent('download'), page.locator('[aria-label="Uložit WAV"]').first().click()]);
+  await page.locator('[aria-label="Uložit WAV"]').first().click();
+  const [dbg] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Balíček pro ladění/ }).click()]);
+  const dp = OUT + '/debug.json';
+  await dbg.saveAs(dp);
+  const dj = JSON.parse(readFileSync(dp, 'utf8'));
+  assert.equal(dj.format, 'zpivanky-debug');
+  assert.ok(dj.recording.pcmB64.length > 10000 && dj.recording.frames.length > 100 && dj.recording.opts.items.length > 3, 'balíček pro ladění');
+  await page.locator('[aria-label="Uložit WAV"]').first().click();
+  const [wav] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Hlas s doprovodem/ }).click()]);
   const wp = OUT + '/export.wav';
   await wav.saveAs(wp);
   const head = readFileSync(wp).subarray(0, 12).toString('latin1');
