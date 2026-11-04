@@ -31,6 +31,8 @@ test('po prvním načtení běží offline a neposílá nic ven', async () => {
   // izolace (COOP/COEP) z service workeru → vícevláknový výpočet; model se při instalaci nestahuje
   assert.equal(await page.evaluate(() => self.crossOriginIsolated), true, 'crossOriginIsolated');
   assert.equal(await page.evaluate(async () => (await caches.keys()).includes('zp-models-v1')), false, 'model se nestahuje předem');
+  const w = await page.evaluate(() => new Promise((res) => { const wk = new Worker('js/audio/import-worker.js', { type: 'module' }); wk.onmessage = (e) => { if (e.data.type === 'done') { res(e.data.result); wk.terminate(); } }; wk.onerror = (e) => res({ err: e.message }); wk.postMessage({ type: 'ping', id: 1 }); }));
+  assert.equal(w.coi, true, 'worker importu je izolovaný (vlákna pro model): ' + JSON.stringify(w));
   assert.equal(await page.evaluate(async () => { const c = await caches.open((await caches.keys())[0]); return (await c.keys()).filter((r) => /models\/|vendor\/ort\//.test(r.url)).length; }), 0);
   for (const r of ['/', '/course', '/lesson/c1l1', '/songs', '/song/hvezdicka', '/tuner', '/me', '/progress', '/tools/piano', '/import']) {
     await page.evaluate((r) => { location.hash = '#' + r; }, r);

@@ -220,7 +220,7 @@ export async function stemClips(song, { factor = 1, shift = 0, which = ['inst'],
       const r = await call({ type: 'render', chans, sr, plan });
       const buf = engine.ctx.createBuffer(r.chans.length, Math.max(1, r.chans[0].length), sr);
       r.chans.forEach((c, i) => buf.copyToChannel(c, i));
-      if (clipCache.size > 4) clipCache.delete(clipCache.keys().next().value);
+      if (clipCache.size >= 2) clipCache.delete(clipCache.keys().next().value); // v paměti nejvýš 2 verze (3 min stereo ≈ 60 MB)
       clipCache.set(key, { buffer: buf, beat0: r.fromBeat, spb: r.outSpb, rate: r.rate });
     }
     const c = clipCache.get(key);
