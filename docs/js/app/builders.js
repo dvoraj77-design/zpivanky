@@ -5,6 +5,7 @@ const BUS = { chords: 'accomp', bass: 'bass', drums: 'drums' };
 import { buildExercise } from '../core/exercises.js';
 import { state, tol, hpProfile } from '../state.js';
 import { transposeSong, keyPc } from '../core/song.js';
+import { backingEvents } from '../core/midi.js';
 
 /** Nástroj vodicí melodie: syntetický hlas, klavír nebo vzorkovaný nástroj (flétna, klarinet, housle…). */
 export const GUIDE_INSTRUMENTS = [['guide', 'Hlas (ú)'], ['piano', 'Klavír'], ['flute', 'Flétna'], ['clarinet', 'Klarinet'], ['violin', 'Housle'], ['cello', 'Violoncello'], ['sax', 'Saxofon'], ['organ', 'Varhany']];
@@ -53,7 +54,7 @@ export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', l
   // originální doprovod (importovaná píseň): syntetický doprovod se nehraje
   const orig = !!clips?.length;
   const st = orig ? 'none' : style || state.settings.accStyle;
-  const acc = st === 'none' ? [] : generateAccompaniment(song, { style: st, bass: bass ?? state.settings.bass, drums: drums ?? state.settings.drums });
+  const acc = st === 'midi' ? backingEvents(song0, shift) : st === 'none' ? [] : generateAccompaniment(song, { style: st === 'midi' ? 'piano' : st, bass: bass ?? state.settings.bass, drums: drums ?? state.settings.drums });
   // nácvik fráze: vodicí melodie jen pro nacvičovanou frázi (v přípravném taktu nic nezpívá)
   const guide = guideEvents(song, guideInst()).map((e, i) => ({ ...e, bus: 'guide', phrase: song.notes[i].phrase })).filter((e) => phrase == null || e.phrase === phrase);
   let items = song.notes.map((n) => ({ t: n.t, d: n.d, midi: n.p, syl: lyricSyl(n, song), phrase: n.phrase, kind: 'note', note: n }));

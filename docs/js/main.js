@@ -7,6 +7,7 @@ import { HomeScreen } from './screens/home.js';
 import { CourseScreen, ChapterScreen, LessonScreen } from './screens/course.js';
 import { SongsScreen, SongDetail, SongPlay, SongEditor } from './screens/songs.js';
 import { ImportScreen } from './screens/import.js';
+import { MidiImportScreen } from './screens/midi.js';
 import { TunerScreen } from './screens/tuner.js';
 import { MeScreen, ProgressScreen, RecordingsScreen, SettingsScreen, BackupScreen, DiagScreen, AboutScreen } from './screens/me.js';
 import { VoiceScreen, VoiceTestScreen } from './screens/voice.js';
@@ -31,6 +32,7 @@ const ROUTES = [
   [/^\/song\/([\w-]+)$/, (m, q) => html`<${SongDetail} id=${m[1]} query=${q} />`, 'songs'],
   [/^\/play\/([\w-]+)$/, (m, q) => html`<${SongPlay} id=${m[1]} query=${q} />`, 'songs'],
   [/^\/import$/, () => html`<${ImportScreen} />`, 'songs'],
+  [/^\/midi$/, () => html`<${MidiImportScreen} />`, 'songs'],
   [/^\/editor$/, () => html`<${SongEditor} />`, 'songs'],
   [/^\/editor\/([\w-]+)$/, (m) => html`<${SongEditor} id=${m[1]} />`, 'songs'],
   [/^\/tuner$/, () => html`<${TunerScreen} />`, 'tuner'],

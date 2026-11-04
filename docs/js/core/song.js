@@ -80,7 +80,7 @@ export function compileSong(def) {
   const [bpb, unit] = (def.meter || '4/4').split('/').map(Number);
   const song = {
     format: SONG_FORMAT, version: SONG_VERSION, id: def.id, title: def.title, subtitle: def.subtitle || '',
-    source: def.source || 'builtin', level: def.level || 1, chapter: def.chapter ?? null,
+    source: def.source || 'builtin', category: def.category || 'cvicne', level: def.level || 1, chapter: def.chapter ?? null,
     practices: def.practices || [], description: def.description || '', credits: def.credits || {},
     tempo: def.tempo || 90, meter: [bpb, unit], key: { tonic: def.key || 'C', mode: def.mode || 'major' },
     sections: [], notes: [], chords: [], lyrics: [], phrases: [], bars: [], timing: null, audio: null,

@@ -156,8 +156,23 @@ export class Percussion {
       o.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.3);
       return;
     }
+    if (midi === 45) { // tom
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.setValueAtTime(180, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.18);
+      g.gain.setValueAtTime(0.6 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      o.connect(g); g.connect(dest); o.start(t); o.stop(t + 0.32);
+      return;
+    }
     const src = ctx.createBufferSource(); src.buffer = this.noise;
     const f = ctx.createBiquadFilter(), g = ctx.createGain();
+    if (midi === 49 || midi === 51 || midi === 46) { // činel / ride / otevřená hi-hat
+      src.loop = true;
+      f.type = 'highpass'; f.frequency.value = midi === 51 ? 5000 : 3500;
+      const len = midi === 49 ? 1.2 : midi === 46 ? 0.35 : 0.45;
+      g.gain.setValueAtTime((midi === 49 ? 0.28 : 0.16) * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+      src.connect(f); f.connect(g); g.connect(dest); src.start(t); src.stop(t + len + 0.05);
+      return;
+    }
     if (midi === 38) { f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.8; g.gain.setValueAtTime(0.5 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16); }
     else { f.type = 'highpass'; f.frequency.value = 7000; g.gain.setValueAtTime(0.35 * vel, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.05); }
     src.connect(f); f.connect(g); g.connect(dest); src.start(t); src.stop(t + 0.2);

@@ -1,7 +1,7 @@
 // Písně: knihovna, detail (tónina, tempo, režim), přehrávač, vlastní píseň (editor, nazpívání).
 import { html, useState, useEffect, useRef, useMemo, useAppState, navigate, TopBar, Seg, Sheet, toast, fmtNote, Stars, scoreClass, MicGate, useWakeLock, useInterval, Empty, Toggle, plural } from '../ui/common.js';
 import { Hint, HelpBtn } from '../ui/hints.js';
-import { LEVELS } from '../data/songs.js';
+import { LEVELS, CATEGORIES, USER_STYLES } from '../data/songs.js';
 import { state, allSongs, findSong, saveSettings, saveCustomSong, deleteCustomSong, hpProfile } from '../state.js';
 import { recommendShifts } from '../core/voice.js';
 import { keyName, chordSymbol, parseChord, noteName } from '../core/music.js';
@@ -19,28 +19,51 @@ import { metronomeEvents } from '../core/accomp.js';
 import { PitchRoll, viewRange } from '../ui/pitchroll.js';
 import { db } from '../store/db.js';
 import { stemClips, stemShift, forgetClips, lookupLyrics, lyricsLines, plainLines } from '../app/importer.js';
+import { MIDI_INSTRUMENTS } from '../core/midi.js';
 import { relyricSong, lyricsText } from '../core/analysis.js';
 
 export function SongsScreen() {
   const st = useAppState();
-  const [lvl, setLvl] = useState(0);
+  const saved = (() => { try { return JSON.parse(sessionStorage.getItem('zp-songs-filter') || 'null'); } catch { return null; } })();
+  const [cat, setCat] = useState(saved?.cat ?? 'all');
+  const [lvl, setLvl] = useState(saved?.lvl ?? 0);
+  const [sty, setSty] = useState(saved?.sty ?? 'all');
+  const [q, setQ] = useState('');
   const [add, setAdd] = useState(false);
-  const mine = (s) => s.source === 'custom' || s.source === 'import';
-  const songs = allSongs().filter((s) => lvl === 0 || (lvl === 5 ? mine(s) : s.level === lvl));
+  useEffect(() => { try { sessionStorage.setItem('zp-songs-filter', JSON.stringify({ cat, lvl, sty })); } catch { /* */ } }, [cat, lvl, sty]);
+  const mine = (s) => s.source === 'custom' || s.source === 'import' || s.source === 'midi';
+  const catOf = (s) => (mine(s) ? 'moje' : s.category || 'cvicne');
+  const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const all = allSongs();
+  const styles = USER_STYLES.filter(([k]) => all.some((s) => mine(s) && (s.style || 'jine') === k));
+  const songs = all.filter((s) => (cat === 'all' || catOf(s) === cat) && (lvl === 0 || s.level === lvl) && (cat !== 'moje' || sty === 'all' || (s.style || 'jine') === sty)
+    && (!q || norm(s.title + ' ' + (s.subtitle || '')).includes(norm(q))))
+    .sort((x, y) => (cat === 'all' ? CATEGORIES.findIndex((c) => c[0] === catOf(x)) - CATEGORIES.findIndex((c) => c[0] === catOf(y)) : 0) || x.level - y.level || x.title.localeCompare(y.title, 'cs'));
+  const count = (c) => all.filter((s) => catOf(s) === c).length;
   return html`<div class="screen">
     <div class="row between mb8"><h1>Písně</h1><button class="btn sm" onClick=${() => setAdd(true)} data-testid="song-add">＋ Přidat</button></div>
     ${add ? html`<${Sheet} onClose=${() => setAdd(false)}><h2 class="mb8">Přidat píseň</h2><div class="list">
-      <a class="item" href="#/import"><div class="ic">🎧</div><div class="grow"><div class="t">Z nahrávky</div><div class="s">Soubor MP3 nebo nahrání mikrofonem → noty, akordy, text a doprovod bez zpěvu</div></div><div class="chev">›</div></a>
+      <a class="item" href="#/midi"><div class="ic">🎼</div><div class="grow"><div class="t">Z MIDI nebo karaoke</div><div class="s">Soubory .mid / .kar (i víc najednou) → melodie, text a původní aranžmá</div></div><div class="chev">›</div></a>
       <a class="item" href="#/editor"><div class="ic">✍️</div><div class="grow"><div class="t">Napsat vlastní</div><div class="s">Noty a text ručně, nebo melodii nazpívej</div></div><div class="chev">›</div></a>
-    </div></${Sheet}>` : null}
-    <div class="chips mb16">${[[0, 'Vše'], [1, 'Úroveň 1'], [2, 'Úroveň 2'], [3, 'Úroveň 3'], [4, 'Úroveň 4'], [5, 'Moje']].map(([v, l]) => html`<button class=${'chip' + (lvl === v ? ' on' : '')} onClick=${() => setLvl(v)}>${l}</button>`)}</div>
+    </div>
+    <div class="section-title">Experimentální</div>
+    <div class="list"><a class="item" href="#/import"><div class="ic">🧪</div><div class="grow"><div class="t">Z nahrávky MP3 (pokus)</div><div class="s">Umělá inteligence odhadne melodii ze zvuku – výsledky zatím bývají nepřesné</div></div><div class="chev">›</div></a></div>
+    </${Sheet}>` : null}
+    <input type="search" class="mb8" placeholder="🔎 Hledat píseň" value=${q} onInput=${(e) => setQ(e.target.value)} aria-label="Hledat píseň" style="width:100%" />
+    <div class="chips mb8">${[['all', `Vše ${all.length}`], ...CATEGORIES.map(([k, l]) => [k, `${l} ${count(k)}`])].map(([v, l]) => html`<button class=${'chip' + (cat === v ? ' on' : '')} onClick=${() => setCat(v)}>${l}</button>`)}</div>
+    ${cat === 'moje' && styles.length > 1 ? html`<div class="chips mb8">${[['all', 'Všechny styly'], ...styles].map(([v, l]) => html`<button class=${'chip' + (sty === v ? ' on' : '')} onClick=${() => setSty(v)}>${l}</button>`)}</div>` : null}
+    <div class="chips mb16">${[[0, 'Každá obtížnost'], [1, '🌱 1'], [2, '🌿 2'], [3, '🌳 3'], [4, '🏔️ 4']].map(([v, l]) => html`<button class=${'chip' + (lvl === v ? ' on' : '')} onClick=${() => setLvl(v)}>${l}</button>`)}</div>
     ${lvl >= 1 && lvl <= 4 ? html`<p class="small muted">${LEVELS[lvl].desc}</p>` : null}
-    ${!songs.length ? html`<${Empty} icon="🎧" title="Zatím žádná vlastní píseň" text="Importuj nahrávku, napiš noty a text, nebo melodii nazpívej." action=${html`<div class="row"><a class="btn primary" href="#/import">Z nahrávky</a><a class="btn" href="#/editor">Napsat</a></div>`} />` : null}
+    ${!songs.length ? (cat === 'moje' && !q ? html`<${Empty} icon="🎼" title="Zatím žádná vlastní píseň" text="Přidej písně z MIDI nebo karaoke souborů (i víc najednou), nebo napiš vlastní." action=${html`<div class="row"><a class="btn primary" href="#/midi">Z MIDI</a><a class="btn" href="#/editor">Napsat</a></div>`} />`
+      : html`<${Empty} icon="🔎" title="Nic nenalezeno" text="Zkus jiný filtr nebo hledání." />`) : null}
     <div class="list">${songs.map((s) => {
       const sp = st.progress.songs[s.id];
+      const c = catOf(s);
+      const sub = s.source === 'custom' ? 'Vlastní · ' + s.practices.slice(0, 2).join(', ') : s.source === 'import' ? `Z nahrávky${s.subtitle ? ' · ' + s.subtitle : ''}` : s.source === 'midi' ? `${USER_STYLES.find((x) => x[0] === (s.style || 'jine'))?.[1] || 'Moje'}${s.subtitle ? ' · ' + s.subtitle : ''}`
+        : `${CATEGORIES.find((x) => x[0] === c)?.[1] || ''} · úroveň ${s.level}${s.subtitle ? ' · ' + s.subtitle : ''}`;
       return html`<a class="item" href=${'#/song/' + s.id}>
-        <div class="ic">${s.source === 'custom' ? '✍️' : s.source === 'import' ? '🎧' : ['', '🌱', '🌿', '🌳', '🏔️'][s.level] || '🎵'}</div>
-        <div class="grow"><div class="t ellipsis">${s.title}</div><div class="s ellipsis">${s.source === 'custom' ? 'Vlastní · ' + s.practices.slice(0, 2).join(', ') : s.source === 'import' ? `Z nahrávky${s.subtitle ? ' · ' + s.subtitle : ''}` : `Úroveň ${s.level} · ${s.practices.slice(0, 2).join(', ')}`}</div></div>
+        <div class="ic">${s.source === 'custom' ? '✍️' : s.source === 'import' ? '🎧' : s.source === 'midi' ? '🎼' : { detske: '🧸', lidove: '🌾', koledy: '🎄', svet: '🌍' }[c] || ['', '🌱', '🌿', '🌳', '🏔️'][s.level] || '🎵'}</div>
+        <div class="grow"><div class="t ellipsis">${s.title}</div><div class="s ellipsis">${sub}</div></div>
         ${sp?.best ? html`<span class=${'badge ' + (sp.best >= 85 ? 'g' : '')}>${sp.best}</span>` : html`<div class="chev">›</div>`}
       </a>`;
     })}</div>
@@ -72,10 +95,12 @@ function SongDetailInner({ song, justImported }) {
   const [loopSel, setLoopSel] = useState('all');
   const [phraseSel, setPhraseSel] = useState(0);
   const [waitOn, setWaitOn] = useState(false);
-  const imported = song.source === 'import';
-  const hasOrig = imported && !!song.audio?.stems;
-  const [acc, setAcc] = useState(hasOrig ? saved?.acc ?? 'orig' : 'synth');
+  const imported = song.source === 'import' || song.source === 'midi';
+  const hasOrig = song.source === 'import' && !!song.audio?.stems;
+  const hasMidi = !!song.backing?.events?.length;
+  const [acc, setAcc] = useState(hasOrig ? saved?.acc ?? 'orig' : hasMidi ? saved?.acc ?? 'midi' : 'synth');
   const accOrig = hasOrig && acc === 'orig';
+  const accMidi = hasMidi && acc === 'midi';
   useEffect(() => { try { localStorage.setItem(cfgKey, JSON.stringify({ shift, factor, mode, acc })); } catch { /* */ } }, [shift, factor, mode, acc]);
   const base = recs[0].shift;
   // původní tónina (případně o oktávu): originální doprovod se nemusí převádět
@@ -86,7 +111,7 @@ function SongDetailInner({ song, justImported }) {
   const style = st.settings.notation === 'solf' ? 'cz' : st.settings.notation;
   const fits = rng.lo >= st.profile.comfortLow && rng.hi <= st.profile.comfortHigh;
   const outOfRange = rng.lo < st.profile.low || rng.hi > st.profile.highChest;
-  const go = () => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=${mode}&part=${loopSel}&ph=${phraseSel}&wait=${waitOn ? 1 : 0}&acc=${accOrig ? 'orig' : 'synth'}`);
+  const go = () => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=${mode}&part=${loopSel}&ph=${phraseSel}&wait=${waitOn ? 1 : 0}&acc=${accOrig ? 'orig' : accMidi ? 'midi' : 'synth'}`);
   const loops = [['all', 'Celá píseň'], ...song.sections.filter((s) => s.type !== 'intro' && s.type !== 'outro').map((s) => ['s' + song.sections.indexOf(s), s.name + ' (dokola)'])];
   // ukázka: první fráze s doprovodem a vodicí melodií v aktuálním nastavení
   const [previewing, setPreviewing] = useState(false);
@@ -95,7 +120,7 @@ function SongDetailInner({ song, justImported }) {
   const soundPreview = async () => {
     if (prevRef.current) { prevRef.current.stop(); prevRef.current = null; setPreviewing(false); return; }
     applyMix();
-    const o = songSessionOpts(song, { shift, factor, mode: 'sing' });
+    const o = songSessionOpts(song, { shift, factor, mode: 'sing', style: accMidi ? 'midi' : undefined });
     const bpb = song.meter[0];
     const first = song.phrases[0]?.start ?? 0;
     const to = o.countIn + Math.min(song.length, Math.ceil((first + 4 * bpb) / bpb) * bpb);
@@ -111,18 +136,19 @@ function SongDetailInner({ song, justImported }) {
     engine.previewSequence(notes.map((n) => ({ midi: n.p, t: n.t - t0, d: n.d * 0.95 })), 60 / tr.tempo, 'guide');
   };
   return html`<div class="screen">
-    <${TopBar} title=${song.title} sub=${song.source === 'custom' ? 'Vlastní píseň' : imported ? `Z nahrávky · ${song.meter.join('/')} · ${Math.round(song.tempo)} BPM` : `Úroveň ${song.level} · ${song.meter.join('/')} · ${song.tempo} BPM`} backTo="/songs"
+    <${TopBar} title=${song.title} sub=${song.source === 'custom' ? 'Vlastní píseň' : imported ? `${song.source === 'midi' ? 'Z MIDI' : 'Z nahrávky'} · ${song.meter.join('/')} · ${Math.round(song.tempo)} BPM` : `Úroveň ${song.level} · ${song.meter.join('/')} · ${song.tempo} BPM`} backTo="/songs"
       right=${song.source === 'custom' ? html`<a class="iconbtn" href=${'#/editor/' + song.id} aria-label="Upravit">✏️</a>` : imported ? html`<button class="iconbtn" aria-label="Upravit" onClick=${() => setSheet('edit')} data-testid="import-edit">✏️</button>` : null} />
     ${justImported ? html`<div class="card goodc mb16" data-testid="import-done"><div style="font-weight:800">✅ Píseň je připravená</div>
       <p class="small mt8">Rozpoznal jsem ${plural(song.notes.length, 'notu', 'noty', 'not')}, ${plural(new Set(song.chords.map((c) => c.sym)).size, 'akord', 'různé akordy', 'různých akordů')}, tempo ${Math.round(song.tempo)} BPM a takt ${song.meter.join('/')}.
-      ${song.analysis?.lyricsFound ? (song.analysis.lyricsTimed ? ' Text se našel i s časováním.' : ' Text se našel (bez časování – rozdělil jsem ho podle pauz).') : ' Text se nenašel – doplň ho přes ✏️.'}</p>
+      ${song.source === 'midi' ? (song.analysis?.lyricsFromMidi ? ' Text je z MIDI souboru.' : song.credits?.lyrics ? '' : ' Text můžeš doplnit přes ✏️.') + (hasMidi ? ` Doprovod hraje ${plural(song.backing.tracks.filter((t) => t.inst !== 'off').length, 'nástroj', 'nástroje', 'nástrojů')} z MIDI.` : '')
+        : song.analysis?.lyricsFound ? (song.analysis.lyricsTimed ? ' Text se našel i s časováním.' : ' Text se našel (bez časování – rozdělil jsem ho podle pauz).') : ' Text se nenašel – doplň ho přes ✏️.'}</p>
       <p class="small muted">Je to odhad: nejdřív si dej <b>Poslech</b> a když něco nesedí, uprav text přes ✏️.</p></div>` : null}
     <div class="card">
       <div class="small muted">${song.description}</div>
       <div class="row wrap mt8">${song.practices.map((p) => html`<span class="badge">${p}</span>`)}</div>
       <div class="kv mt16"><span>Stavba</span><span>${song.sections.map((s) => s.name).join(' · ')}</span>
         <span>Rozsah</span><span>${fmtNote(rng.lo)}–${fmtNote(rng.hi)} (${rng.hi - rng.lo} půltónů)</span>
-        ${imported ? html`<span>Interpret</span><span>${song.subtitle || '—'}</span><span>Oddělení</span><span>${song.analysis?.mode === 'precise' ? 'Přesně (MDX-Net)' : 'Rychle'}${hasOrig ? '' : ' · originál smazán'}</span><span>Text</span><span>${song.analysis?.lyricsEdited ? 'upravený' : song.credits?.lyrics || 'bez textu'}</span>`
+        ${imported ? html`<span>Interpret</span><span>${song.subtitle || '—'}</span>${song.source === 'midi' ? html`<span>Melodie</span><span>stopa „${song.analysis?.melodyTrack || '?'}“</span>` : html`<span>Oddělení</span><span>${song.analysis?.mode === 'precise' ? 'Přesně (MDX-Net)' : 'Rychle'}${hasOrig ? '' : ' · originál smazán'}</span>`}<span>Text</span><span>${song.analysis?.lyricsEdited ? 'upravený' : song.credits?.lyrics || 'bez textu'}</span>`
           : html`<span>Melodie</span><span>${song.credits?.melody || '—'}</span><span>Text</span><span>${song.credits?.lyrics || '—'}</span>`}
         ${sp?.best ? html`<span>Nejlepší</span><span class=${scoreClass(sp.best)} style="font-weight:800">${sp.best} bodů (${sp.attempts}× zpíváno)</span>` : null}</div>
     </div>
@@ -150,10 +176,10 @@ function SongDetailInner({ song, justImported }) {
       ${mode === 'sing' ? html`<label class="field">Co zpívat<select value=${loopSel} onChange=${(e) => setLoopSel(e.target.value)}>${loops.map(([v, l]) => html`<option value=${v}>${l}</option>`)}</select></label>` : null}
       ${mode === 'phrase' ? html`<label class="field">Začít frází<select value=${phraseSel} onChange=${(e) => setPhraseSel(parseInt(e.target.value, 10))}>${song.phrases.map((p) => html`<option value=${p.index}>${p.index + 1}. ${song.lyrics[p.index]?.text || ''}</option>`)}</select></label>
         <${Toggle} label="Čekat, až tón trefím" sub="Fráze se zastaví na každém tónu, dokud ho nezazpíváš" on=${waitOn} onChange=${setWaitOn} />` : null}
-      <label class="field">Doprovod<select value=${accOrig ? 'orig' : st.settings.accStyle} onChange=${(e) => { const v = e.target.value; if (v === 'orig') setAcc('orig'); else { setAcc('synth'); saveSettings({ accStyle: v }); } }} data-testid="acc-select">
-        ${hasOrig ? html`<option value="orig">🎧 Originál (bez zpěvu)</option>` : null}${Object.entries(STYLES).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select></label>
+      <label class="field">Doprovod<select value=${accOrig ? 'orig' : accMidi ? 'midi' : st.settings.accStyle} onChange=${(e) => { const v = e.target.value; if (v === 'orig' || v === 'midi') setAcc(v); else { setAcc('synth'); saveSettings({ accStyle: v }); } }} data-testid="acc-select">
+        ${hasOrig ? html`<option value="orig">🎧 Originál (bez zpěvu)</option>` : null}${hasMidi ? html`<option value="midi">🎼 Původní aranžmá z MIDI</option>` : null}${Object.entries(STYLES).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select></label>
       <label class="field">Text<${Seg} options=${[['text', 'Text'], ['la', 'la'], ['nu', 'nu'], ['solf', 'do re mi']]} value=${st.settings.lyricsMode} onChange=${(v) => saveSettings({ lyricsMode: v })} /></label>
-      ${accOrig || st.settings.accStyle === 'band' || st.settings.accStyle === 'none' ? null : html`<div class="row between"><span style="font-weight:700">Jemný rytmus (bicí)</span><${Seg} options=${[[true, 'Ano'], [false, 'Ne']]} value=${st.settings.drums} onChange=${(v) => saveSettings({ drums: v })} /></div>`}
+      ${accOrig || accMidi || st.settings.accStyle === 'band' || st.settings.accStyle === 'none' ? null : html`<div class="row between"><span style="font-weight:700">Jemný rytmus (bicí)</span><${Seg} options=${[[true, 'Ano'], [false, 'Ne']]} value=${st.settings.drums} onChange=${(v) => saveSettings({ drums: v })} /></div>`}
       <label class="field">Vodicí melodie hraje<select value=${st.settings.guideInst || 'guide'} onChange=${(e) => { saveSettings({ guideInst: e.target.value }); engine.previewNote(tr.notes[0]?.p ?? 60, 0.9, e.target.value); }} data-testid="detail-guide-inst">
         ${GUIDE_INSTRUMENTS.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
       <div class="row"><button class="btn sm grow" onClick=${soundPreview} data-testid="sound-preview">${previewing ? '■ Zastavit ukázku' : '🔊 Ukázka zvuku'}</button>
@@ -176,6 +202,8 @@ function ImportEdit({ song, onClose }) {
   const [busy, setBusy] = useState(null);
   const [msg, setMsg] = useState(null);
   const [fix, setFix] = useState(false);
+  const [style, setStyle] = useState(song.style || 'jine');
+  const [tracks, setTracks] = useState(song.backing?.tracks || null);
   const lookup = async () => {
     setBusy('Hledám text…'); setMsg(null);
     const f = await lookupLyrics({ title, artist, duration: song.audio?.duration || song.analysis?.duration });
@@ -188,7 +216,7 @@ function ImportEdit({ song, onClose }) {
   const save = async () => {
     const lines = timed && timed.map((l) => l.text).join('\n') === text ? timed : plainLines(text);
     const s2 = lines.length ? relyricSong(song, lines) : song;
-    await saveCustomSong({ ...s2, title: title || song.title, subtitle: artist, description: artist ? `${artist} – importovaná píseň` : 'Importovaná píseň', credits: { ...(s2.credits || {}), melody: artist || 'originál', lyrics: lines === timed ? 'lrclib.net' : lines.length ? 'upravený text' : s2.credits?.lyrics || '' } });
+    await saveCustomSong({ ...s2, ...(song.source === 'midi' ? { style, backing: tracks ? { ...song.backing, tracks } : song.backing } : {}), title: title || song.title, subtitle: artist, description: artist ? `${artist} – importovaná píseň` : 'Importovaná píseň', credits: { ...(s2.credits || {}), melody: artist || 'originál', lyrics: lines === timed ? 'lrclib.net' : lines.length ? 'upravený text' : s2.credits?.lyrics || '' } });
     toast('Uloženo.'); onClose();
   };
   const dropAudio = async () => {
@@ -207,6 +235,9 @@ function ImportEdit({ song, onClose }) {
         <button class="btn sm" onClick=${() => octave(-1)} aria-label="Melodie o oktávu níž">8va ▼</button><button class="btn sm" onClick=${() => octave(1)} aria-label="Melodie o oktávu výš">8va ▲</button></div>
       <label class="field">Název<input type="text" value=${title} onInput=${(e) => setTitle(e.target.value)} /></label>
       <label class="field">Interpret<input type="text" value=${artist} onInput=${(e) => setArtist(e.target.value)} /></label>
+      ${song.source === 'midi' ? html`<label class="field">Styl<select value=${style} onChange=${(e) => setStyle(e.target.value)}>${USER_STYLES.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>` : null}
+      ${tracks?.length ? html`<div class="field">Nástroje doprovodu z MIDI${tracks.map((t, i) => html`<div class="row between" style="gap:10px;align-items:center;margin-top:6px"><span class="grow small ellipsis">${t.name}</span>
+        <select style="width:50%;flex:none" value=${t.inst} onChange=${(e) => setTracks(tracks.map((x, k) => (k === i ? { ...x, inst: e.target.value } : x)))} aria-label=${'Nástroj pro ' + t.name}>${MIDI_INSTRUMENTS.filter(([k]) => (t.inst === 'drum' || t.role === 'drums' ? k === 'drum' || k === 'off' : k !== 'drum')).map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></div>`)}</div>` : null}
       <label class="field">Text <span class="tiny dim">jeden řádek = jedna fráze</span><textarea value=${text} onInput=${(e) => setText(e.target.value)} style="min-height:160px" data-testid="edit-lyrics"></textarea></label>
       <button class="btn sm" onClick=${lookup} disabled=${!!busy}>${busy || '🔎 Dohledat text na lrclib.net'}</button>
       ${msg ? html`<p class="small muted">${msg}</p>` : null}
@@ -274,6 +305,7 @@ function SongPlayInner({ song, query }) {
   const ph = Math.max(0, Math.min(song.phrases.length - 1, parseInt(query.get('ph') || '0', 10)));
   const wait = query.get('wait') === '1';
   const orig = query.get('acc') === 'orig' && !!song.audio?.stems;
+  const midiAcc = query.get('acc') === 'midi' && !!song.backing?.events?.length;
   const [clips, setClips] = useState(orig ? null : []);
   const [prepErr, setPrepErr] = useState(null);
   useEffect(() => {
@@ -289,7 +321,7 @@ function SongPlayInner({ song, query }) {
     if (mode === 'sing' && part.startsWith('s')) { const s = song.sections[parseInt(part.slice(1), 10)]; if (s) loop = { from: s.start, to: s.end }; }
     let prep = null;
     if (mode === 'phrase') { const p = song.phrases[ph]; if (p) { const L = phraseLoop(song, p); loop = { from: L.from, to: L.to }; prep = { from: L.from, to: L.phraseFrom }; } }
-    const o = songSessionOpts(song, { shift, factor, mode, loop, wait: mode === 'phrase' && wait, clips, phrase: mode === 'phrase' ? song.phrases[ph]?.index : null, prep });
+    const o = songSessionOpts(song, { shift, factor, mode, loop, wait: mode === 'phrase' && wait, clips, phrase: mode === 'phrase' ? song.phrases[ph]?.index : null, prep, style: midiAcc ? 'midi' : undefined });
     if (mode === 'phrase') o.items = o.items.filter((i) => i.phrase === song.phrases[ph]?.index);
     else if (loop) o.items = o.items.filter((i) => i.t >= loop.from - 1e-6 && i.t < loop.to);
     return o;
@@ -299,7 +331,7 @@ function SongPlayInner({ song, query }) {
     <p class="small muted mt8">Přizpůsobuji ho tempu ${Math.round(factor * 100)} %${stemShift(shift) ? ` a tónině (${stemShift(shift) > 0 ? '+' : ''}${stemShift(shift)})` : ''}. Chvilku to trvá jen poprvé.</p></div></div>`;
   const tr = opts.song;
   const onResult = (r) => (mode === 'listen' ? null : saveAttempt(r, { type: 'song', id: song.id, title: song.title, opts, mode, shift, factor }));
-  const goPhrase = (d) => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=phrase&ph=${ph + d}&wait=${wait ? 1 : 0}&acc=${orig ? 'orig' : 'synth'}&auto=1`, true);
+  const goPhrase = (d) => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=phrase&ph=${ph + d}&wait=${wait ? 1 : 0}&acc=${orig ? 'orig' : midiAcc ? 'midi' : 'synth'}&auto=1`, true);
   if (prepErr) console.warn('Originální doprovod:', prepErr);
   const phraseNav = mode === 'phrase' ? { i: ph, n: song.phrases.length, text: song.lyrics[ph]?.text || '', go: goPhrase } : null;
   return html`<${RunScreen} opts=${opts} title=${song.title} sub=${`${keyName(keyPc(tr.key.tonic), state.settings.notation === 'solf' ? 'cz' : state.settings.notation, tr.key.mode)} · ${MODES.find((m) => m[0] === mode)?.[1] || ''} · ${Math.round(factor * 100)} %`}

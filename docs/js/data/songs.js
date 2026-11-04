@@ -2,6 +2,7 @@
 // Zápis: melodie „nota+oktáva/doby“ (oktáva i délka se pamatují), takty „|“, slabiky „-“, „~“ = spojení slov (k~nám),
 // akordy po taktech. Každý řádek = [melodie, text (nebo pole slok), akordy] = jedna fráze.
 import { compileSong } from '../core/song.js';
+import { LIBRARY } from './library.js';
 
 const OWN = { melody: 'Zpívánky (původní)', lyrics: 'Zpívánky (původní)' };
 
@@ -291,12 +292,20 @@ konecChorus,
 konecVerse(['Pta-ci už spí v~hníz-dě', 'i lou-ka už spin-ká.', 'Mě-síc se u-smí-vá', 'a ti-še si zpí-vám.']),
 konecChorus);
 
+hvezdicka.category = 'detske';
+oda.category = 'svet';
+
 export const SONGS = [
   dobreRano, triTony, ukolebavka, poSchodech, houpacka, kapky,
   hvezdicka, oda, kukacka, vecerni, pochod, naLouce,
   horska, polka, valcik, rybar, svatojanska, zebricek,
   cestaDomu, letniVitr, ozvena, svetlaMesta, naVrcholu, konecDne,
+  ...LIBRARY,
 ];
+
+/** Kategorie knihovny; vlastní písně mají navíc styl (pop, rock…). */
+export const CATEGORIES = [['cvicne', 'Cvičné'], ['detske', 'Dětské'], ['lidove', 'Lidové'], ['koledy', 'Koledy'], ['svet', 'Ze světa'], ['moje', 'Moje']];
+export const USER_STYLES = [['pop', 'Pop'], ['rock', 'Rock'], ['lidove', 'Lidové'], ['detske', 'Dětské'], ['koledy', 'Koledy'], ['country', 'Country a folk'], ['muzikal', 'Muzikál a film'], ['jine', 'Jiné']];
 
 export const LEVELS = {
   1: { name: 'Úroveň 1', desc: 'Rozsah 3–5 tónů, krokově, pomalu' },
