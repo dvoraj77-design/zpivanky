@@ -28,7 +28,9 @@ for (const s of SONGS) {
     const { lo, hi } = songRange(s);
     const span = hi - lo;
     const distinct = new Set(s.notes.map((n) => n.p)).size;
-    if (s.level === 1) {
+    const practice = (s.category || 'cvicne') === 'cvicne'; // přísná pravidla úrovní jen pro cvičné písně
+    if (!practice) assert.ok(['detske', 'lidove', 'koledy', 'svet'].includes(s.category), 'kategorie');
+    if (practice && s.level === 1) {
       assert.ok(distinct >= 3 && distinct <= 5, `úroveň 1: ${distinct} různých tónů`);
       assert.ok(span <= 7, 'úroveň 1: rozsah ' + span);
       const v = s.sections.find((x) => x.type === 'verse');
@@ -37,21 +39,23 @@ for (const s of SONGS) {
       assert.ok(s.tempo <= 100, 'úroveň 1: pomalé tempo');
       for (let i = 1; i < s.notes.length; i++) if (s.notes[i].phrase === s.notes[i - 1].phrase) assert.ok(Math.abs(s.notes[i].p - s.notes[i - 1].p) <= 4, 'úroveň 1: krokově/malé skoky');
     }
-    if (s.level === 2) assert.ok(span <= 9 && span >= 5, 'úroveň 2: rozsah do sexty, je ' + span);
-    if (s.level === 3) assert.ok(span <= 12 && span >= 10, 'úroveň 3: rozsah oktávy, je ' + span);
-    if (s.level === 4) {
+    if (practice && s.level === 2) assert.ok(span <= 9 && span >= 5, 'úroveň 2: rozsah do sexty, je ' + span);
+    if (practice && s.level === 3) assert.ok(span <= 12 && span >= 10, 'úroveň 3: rozsah oktávy, je ' + span);
+    if (practice && s.level === 4) {
       assert.ok(span >= 13 && span <= 16, 'úroveň 4: přes oktávu, je ' + span);
       assert.ok(s.sections.some((x) => x.type === 'chorus'), 'úroveň 4: refrén');
       const syncopated = s.notes.some((n) => (n.t % 1) > 0.25 && n.d >= 1);
       assert.ok(syncopated, 'úroveň 4: synkopy');
     }
     // akordy na těžkých dobách
-    assert.deepEqual(checkHarmony(s), [], 'disonance na těžkých dobách');
+    // u skutečných písní ve složeném taktu (6/8) jsou na druhé těžké době běžné přírazy – kontroluje se jen první doba
+    const harm = checkHarmony(s).filter((p) => practice || s.meter[0] !== 6 || p.beat % s.meter[0] === 0);
+    assert.deepEqual(harm, [], 'disonance na těžkých dobách');
     // konec na tónice: poslední akord i poslední nota
     const tonicPc = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[s.key.tonic[0]] + (s.key.tonic[1] === 'b' ? -1 : s.key.tonic[1] === '#' ? 1 : 0);
     const lastChord = parseChord(s.chords.at(-1).sym);
     assert.equal(lastChord.root, (tonicPc + 12) % 12, 'poslední akord = tónika');
-    assert.equal(pc(s.notes.at(-1).p), (tonicPc + 12) % 12, 'poslední nota = tónika');
+    if (practice) assert.equal(pc(s.notes.at(-1).p), (tonicPc + 12) % 12, 'poslední nota = tónika');
     // předehra začíná na tónice nebo dominantě (nastaví tóninu)
     const firstChord = parseChord(s.chords[0].sym);
     assert.ok([tonicPc % 12, (tonicPc + 7) % 12, (tonicPc + 5) % 12].includes(firstChord.root), 'předehra v tónině');

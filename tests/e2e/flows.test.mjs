@@ -197,7 +197,7 @@ test('vlastní píseň: editor → uložit → knihovna → přehrát', async ()
   await page.getByRole('button', { name: '■ Hotovo' }).click();
   await page.waitForSelector('.ring');
   await go(page, '/songs');
-  await page.getByRole('button', { name: 'Moje' }).click();
+  await page.getByRole('button', { name: /^Moje \d/ }).click();
   await page.waitForSelector('text=Moje testovací');
   assert.deepEqual(env.errors, []);
   await page.close();

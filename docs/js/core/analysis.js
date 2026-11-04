@@ -470,7 +470,8 @@ export function syllabify(word) {
 export function lineSyllables(text) {
   const out = [];
   for (const word of String(text).trim().split(/\s+/).filter(Boolean)) {
-    const sy = syllabify(word);
+    // slabiky oddělené pomlčkou (pís-nič-ka) mají přednost před automatickým dělením
+    const sy = /\p{L}-\p{L}/u.test(word) ? word.split('-').filter(Boolean) : syllabify(word);
     sy.forEach((s, i) => out.push(i < sy.length - 1 ? s + '-' : s));
   }
   return out;

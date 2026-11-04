@@ -47,7 +47,7 @@ test('import souboru (rychle): noty, akordy, tempo, text z lrclib, píseň v kni
   const page = await newPage(env, '/songs');
   await prep(page);
   await page.getByTestId('song-add').click();
-  await page.getByText('Z nahrávky').click();
+  await page.getByText('Z nahrávky MP3 (pokus)').click();
   await page.getByTestId('import-file').setInputFiles(OUT + '/hvezdicka.wav');
   await page.getByTestId('import-title').waitFor();
   assert.equal(await page.getByTestId('import-title').inputValue(), 'hvezdicka');
