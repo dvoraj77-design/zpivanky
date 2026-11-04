@@ -25,14 +25,14 @@ export function exercisePlan(spec, seed) {
   return buildExercise(s, state.profile, { seed, sylMode: s.syl || (state.settings.notation === 'solf' ? 'solf' : 'solf') });
 }
 
-export function exerciseSessionOpts(plan, { guide = true } = {}) {
+export function exerciseSessionOpts(plan, { guide = true, listenInst = null, tol: tolOverride = null, metroUntil = null } = {}) {
   const bpb = plan.bpb || 4;
   const audio = [];
   audio.push(...chordEvents(plan.chords, bpb));
   for (const it of plan.items) {
     if (it.listen) {
       if (plan.kind === 'rhythm') audio.push({ t: it.t, d: 0.05, midi: 84, inst: 'click', vel: 0.9, bus: 'accomp' });
-      else audio.push({ t: it.t, d: it.d, midi: it.midi, toMidi: it.toMidi, inst: guideInst(), vel: 0.75, bus: 'accomp' });
+      else audio.push({ t: it.t, d: it.d, midi: it.midi, toMidi: it.toMidi, inst: listenInst === 'piano' ? 'guidePiano' : listenInst || guideInst(), vel: 0.75, bus: 'accomp' });
     } else if (guide && plan.guide && it.kind !== 'rhythm') {
       audio.push({ t: it.t, d: it.d * 0.97, midi: it.midi, toMidi: it.toMidi, inst: guideInst(), vel: 0.6, bus: 'guide' });
     }
@@ -40,7 +40,7 @@ export function exerciseSessionOpts(plan, { guide = true } = {}) {
   return {
     kind: plan.kind === 'ear' || plan.kind === 'voicetest' ? 'pitch' : plan.kind,
     items: plan.items, audio, tempo: plan.tempo, factor: state.settings.exTempo ?? 0.7, bpb, countIn: plan.countIn ?? bpb,
-    metronome: !!plan.metronome, tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0,
+    metronome: !!plan.metronome, metroUntil, tol: tolOverride ?? tol(), latencyMs: hpProfile()?.latencyMs ?? 0,
     record: state.settings.saveRecordings, dyn: { curve: plan.curve, range: plan.range }, keyPc: plan.keyPc, hideCurve: plan.hideCurve,
   };
 }

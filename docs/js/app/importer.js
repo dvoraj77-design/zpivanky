@@ -56,10 +56,21 @@ export async function downloadModel(onProgress, signal) {
   for (const f of MODEL_FILES) {
     const url = BASE + f.path;
     if (await c.match(url)) { done += f.size; onProgress?.(done / total); continue; }
-    const res = await fetch(url, { signal, cache: 'no-store' });
-    if (!res.ok) throw new Error(`Stažení se nepovedlo (${res.status}). Zkontroluj připojení k internetu.`);
-    const reader = res.body.getReader(); const parts = []; let got = 0;
-    for (;;) { const { done: end, value } = await reader.read(); if (end) break; parts.push(value); got += value.length; onProgress?.((done + Math.min(got, f.size)) / total); }
+    // velké soubory: při výpadku sítě pokračovat od staženého místa (Range), nejvýš 5 pokusů
+    const parts = []; let got = 0, tries = 0;
+    for (;;) {
+      try {
+        const res = await fetch(url, { signal, cache: 'no-store', headers: got ? { Range: `bytes=${got}-` } : {} });
+        if (got && res.status === 200) { parts.length = 0; got = 0; } // server neumí pokračovat → od začátku
+        else if (!res.ok) throw Object.assign(new Error(`Stažení se nepovedlo (${res.status}).`), { fatal: res.status === 404 });
+        const reader = res.body.getReader();
+        for (;;) { const { done: end, value } = await reader.read(); if (end) break; parts.push(value); got += value.length; onProgress?.((done + Math.min(got, f.size)) / total); }
+        break;
+      } catch (e) {
+        if (signal?.aborted || e.fatal || ++tries >= 5) throw new Error('Stažení modelu se přerušilo (výpadek internetu). Zkus to znovu, nejlépe na Wi-Fi – už stažená část se nestahuje znovu.');
+        await new Promise((r) => setTimeout(r, 1500 * tries));
+      }
+    }
     await c.put(url, new Response(new Blob(parts, { type: f.type }), { headers: { 'Content-Type': f.type } }));
     done += f.size;
   }
@@ -173,7 +184,9 @@ export async function importSong({ audio, meta, mode, lyrics, prefer = 'auto', o
     id, title: meta.title || 'Importovaná píseň', artist: meta.artist || '', beats: an.beats, meter: an.meter, downbeat: an.downbeat,
     chordsPerBeat: an.chordsPerBeat, vocalFrames: an.vocalFrames, lyricsLines: lines, lyricsSource, duration: audio.duration,
   });
-  if (!song.notes.length) throw new Error('V nahrávce jsem nenašel zpívanou melodii. Zkus režim Přesně nebo jinou nahrávku.');
+  if (song.notes.length < 6) throw new Error(mode === 'precise'
+    ? 'Z nahrávky se nepodařilo spolehlivě vyčíst melodii zpěvu. Import ze zvuku je zatím pokus – mnohem přesnější je MIDI nebo karaoke soubor (Písně → ＋ Přidat → Z MIDI).'
+    : 'V nahrávce jsem nenašel zpívanou melodii. Zkus režim Přesně, nebo raději MIDI / karaoke soubor (Písně → ＋ Přidat → Z MIDI).');
   const st = an.stems;
   const bytes = st.inst[0].byteLength * 2 + st.voc.byteLength;
   song.audio = { stems: true, sr: st.sr, vocSr: st.vocSr, duration: audio.duration, mode, backend: an.backend, bytes };

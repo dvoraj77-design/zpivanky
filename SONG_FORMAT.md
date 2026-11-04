@@ -45,7 +45,10 @@ Jedna píseň = jeden JSON objekt. Stejný formát používají vestavěné pís
 | `format`, `version` | text, číslo | Vždy `zpivanky-song`, `1`. |
 | `id` | text | Jedinečný identifikátor (vlastní písně `custom-…`, importované `import-…`). |
 | `title`, `subtitle`, `description` | text | Název, podtitul, krátký popis. |
-| `source` | `builtin` \| `custom` \| `import` | Původ písně. |
+| `source` | `builtin` \| `custom` \| `import` \| `midi` | Původ písně. |
+| `category` | `cvicne` \| `detske` \| `lidove` \| `koledy` \| `svet` | Kategorie vestavěné knihovny (vlastní písně jsou „Moje“). |
+| `style` | `pop` \| `rock` \| `lidove` \| … | Styl vlastní písně (třídění v Moje). |
+| `bars` | [doby] | Začátky taktů (předtakty) – nácvik frází po celých taktech. |
 | `level` | 0–4 | Obtížnost (0 = nehodnocená vlastní píseň). |
 | `chapter` | číslo \| null | Kapitola kurzu, ke které píseň patří. |
 | `practices` | text[] | Co píseň procvičuje. |
@@ -93,6 +96,19 @@ Jedna píseň = jeden JSON objekt. Stejný formát používají vestavěné pís
 - `audio.stems` jsou relativní cesty (nebo URL serveru ve fázi 2); přehrávač místo syntetického doprovodu přehraje `instrumental` a volitelně `vocals` jako vodicí hlas („Singer ON/OFF“). Transpozice a tempo u nahrávek vyžadují time-stretch/pitch-shift na serveru nebo v AudioWorkletu.
 - `analysis` je nepovinné a slouží k ladění (jistota přepisu, surová křivka vokálu).
 - Všechna ostatní pole zůstávají stejná, takže hodnocení, smyčky, karaoke i doporučení tóniny fungují beze změny.
+
+## Píseň z MIDI (`source: "midi"`)
+
+```json
+"backing": {
+  "tracks": [ { "id": "2:1", "name": "Bass", "gm": "Basa", "inst": "bass", "role": "bass" } ],
+  "events": [ { "t": 4, "d": 1.9, "midi": 36, "vel": 0.57, "tr": "2:1" } ]
+}
+```
+
+- `backing` je původní aranžmá z MIDI: ostatní stopy převedené na nástroje aplikace (`piano`, `guitar`, `nylon`, `bass`, `violin`, `cello`, `flute`, `clarinet`, `sax`, `organ`, `drum`, `off`). Doby jsou ve stejné ose jako noty (doba 0 = začátek písně), při transpozici se posouvá vše kromě bicích.
+- Role (`chords` / `bass` / `drums`) určuje sběrnici mixu (hlasitost akordů, basy a bicích zvlášť).
+- Text z karaoke souborů: `/` nový řádek, `\` nový odstavec, mezera = nové slovo; MIDI bez mezer (LilyPond) = každá slabika samostatně.
 
 ## Kompaktní zápis vestavěných písní
 

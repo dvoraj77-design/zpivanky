@@ -57,7 +57,7 @@ export class Session {
     const ev = o.audio.map((e) => ({ ...e, t: e.t + ci }));
     const len = Math.max(...this.items.map((i) => i.t + i.d), ...ev.map((e) => e.t + e.d), ci) + 0.5;
     if (ci > 0) ev.push(...metronomeEvents(0, ci, o.bpb).map((e) => ({ ...e, vel: 1 })));
-    if (o.metronome) ev.push(...metronomeEvents(ci, len, o.bpb));
+    if (o.metronome) ev.push(...metronomeEvents(ci, o.metroUntil != null ? Math.min(len, ci + o.metroUntil) : len, o.bpb)); // metroUntil: metronom zmlkne (hra Drž tempo)
     this.length = len;
     const loop = o.loop ? { from: o.loop.from + ci, to: o.loop.to + ci } : null;
     const clips = (o.clips || []).map((c) => ({ ...c, beat0: c.beat0 + ci }));

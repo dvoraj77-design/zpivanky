@@ -38,7 +38,8 @@ export function ImportScreen() {
   if (step === 'prep' && audio) return html`<${Prepare} audio=${audio} meta=${meta} setMeta=${setMeta} onBack=${() => { setAudio(null); setStep('source'); }} />`;
 
   return html`<div class="screen">
-    <${TopBar} title="Importovat píseň" backTo="/songs" />
+    <${TopBar} title="Píseň z nahrávky (pokus)" backTo="/songs" />
+    <div class="card warnc small mb16">🧪 <b>Experimentální.</b> Odhadnout melodii zpěvu ze zvuku je velmi těžké – výsledek bývá nepřesný. Spolehlivější je <a href="#/midi">MIDI nebo karaoke soubor</a>.</div>
     <${Hint} id="import" title="Jak import funguje">Aplikace v nahrávce najde zpěv, převede ho na noty, pozná tempo, takt a akordy a připraví doprovod bez zpěvu. Vše se počítá <b>přímo v telefonu</b>, nahrávka se nikam neposílá. Výsledek je odhad – text a noty můžeš potom upravit.</${Hint}>
     <div class="list">
       <label class="item" style="cursor:pointer">

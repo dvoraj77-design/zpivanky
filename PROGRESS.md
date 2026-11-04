@@ -25,6 +25,13 @@ Podle tohoto souboru se dá kdykoli navázat. Pořadí: celek → obsah → test
 - Service worker: hlavičky izolace (vícevláknové WASM), model v cache na vyžádání.
 - Testy: `tests/unit/import.test.mjs`, `tests/unit/import2.test.mjs`, `tests/e2e/import.test.mjs` (rychlý import se zarovnaným textem z podvrženého lrclib, přehrání originálu v 70 % a +3 půltónech, úprava textu, přesný import s modelem ve WASM, nahrání mikrofonem).
 
+## Kolo 3 – MIDI, knihovna, nástroje, hlasitosti (hotovo)
+- Import MIDI / karaoke (.mid, .kar): výběr stopy melodie s poslechem, nástroje pro každou stopu doprovodu, text z MIDI (i cp1250), tempo, styl; hromadný import mnoha souborů; přehrávání původního aranžmá.
+- Knihovna: kategorie, hledání (bez diakritiky), filtr obtížnosti a stylu; +24 skutečných písní (lidové, koledy, dětské, ze světa).
+- 7 nových vzorkovaných nástrojů, 4 nové styly doprovodu (klasická kytara, smyčce, varhany, kapela), volba nástroje melodie, mixér hlasitostí po skupinách, ukázka zvuku na detailu písně.
+- Nácvik fráze po celých taktech s přípravným taktem.
+- MP3 import přesunut mezi experimentální, stažení modelu pokračuje po výpadku sítě.
+
 ## Další nápady
 - Ruční editor jednotlivých not importované písně (táhnout výš/níž, délka).
 - Původní zpěv jako vodicí hlas (místo syntetického) v režimu Zpívat.

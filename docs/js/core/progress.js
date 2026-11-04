@@ -3,7 +3,7 @@ import { ALL_LESSONS, CHAPTERS, WARMUPS } from '../data/course.js';
 import { noteName, INTERVAL_SHORT } from './music.js';
 
 export function emptyProgress() {
-  return { version: 1, lessons: {}, songs: {}, theory: {}, days: {}, noteStats: {}, intervalStats: {}, history: [], badges: {}, dailyGoal: 10, unlockedTo: null };
+  return { version: 1, lessons: {}, songs: {}, theory: {}, days: {}, noteStats: {}, intervalStats: {}, history: [], badges: {}, games: {}, dailyGoal: 10, unlockedTo: null };
 }
 
 export const dayKey = (d = new Date()) => {

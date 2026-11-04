@@ -236,6 +236,10 @@ export function ResultView({ result, opts, title, extra, next, onRetry, onExit }
       <div class="mt8"><${Stars} n=${r.stars} /></div>
       <div class="small muted mt8">${r.kind === 'breath' ? `Výdrž ${r.duration.toFixed(1)} s · stabilita ${r.stability} %` : 'jak přesně jsi zasáhl cíl'}</div>
     </div>
+    ${extra?.game ? html`<div class="card mt16" data-testid="game-result"><div class="row between"><b>🎮 ${extra.game.title}</b><span style="font-weight:900;font-size:22px" class=${scoreClass(extra.game.score)}>${extra.game.score}</span></div>
+      <div class="mt8"><${Stars} n=${extra.game.stars} /></div>${extra.game.record ? html`<div class="small c-good mt8" style="font-weight:800">🏆 Nový osobní rekord!</div>` : null}
+      ${extra.game.metrics?.length ? html`<div class="kv mt8">${extra.game.metrics.map(([k, v]) => html`<span>${k}</span><span>${v}</span>`)}</div>` : null}
+      ${extra.game.unlocked ? html`<div class="small c-acc mt8">🔓 Odemkla se úroveň ${extra.game.unlocked}</div>` : null}</div>` : null}
     ${extra?.badges?.length ? html`<div class="card hero mt16 center"><div style="font-size:30px">🏅</div><b>Nový odznak: ${extra.badges.map((b) => b.title).join(', ')}</b></div>` : null}
     ${extra?.unlocked ? html`<div class="card infoc mt16 small">🔓 Odemkla se další lekce: <b>${extra.unlocked}</b></div>` : null}
     <div class="pill-tip mt16">💡 ${r.tip}</div>

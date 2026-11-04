@@ -62,10 +62,14 @@ export function buildExercise(spec, profile, o = {}) {
       let degrees = spec.degrees || [1];
       let durs = spec.durs || degrees.map(() => 1);
       if (spec.type === 'hold') { degrees = spec.degrees || [1]; durs = degrees.map(() => spec.holdBeats || 4); }
-      const offsets = degrees.map((d) => degreeToSemis(d, SCALES[spec.scale || 'major']));
-      const tonics = tonicSequence(offsets, base, lo, hi, spec.reps || 3, spec.direction || 'up');
+      let offsets = degrees.map((d) => degreeToSemis(d, SCALES[spec.scale || 'major']));
+      // hry: v každém kole jiný motiv (spec.motifs) – rozsah se počítá ze všech
+      const motifs = spec.motifs?.length ? spec.motifs : null;
+      const allOffsets = motifs ? motifs.flatMap((m) => m.degrees.map((d) => degreeToSemis(d, SCALES[spec.scale || 'major']))) : offsets;
+      const tonics = tonicSequence(allOffsets, base, lo, hi, spec.reps || 3, spec.direction || 'up');
       let phrase = 0;
       for (const tonic of tonics) {
+        if (motifs) { const m = motifs[phrase % motifs.length]; degrees = m.degrees; durs = m.durs; offsets = degrees.map((d) => degreeToSemis(d, SCALES[spec.scale || 'major'])); }
         const repKey = pc(tonic);
         // nápověda: akord tóniky + první tón
         const cue = spec.cueBeats ?? 2;
@@ -258,6 +262,7 @@ export function dynamicsCurve(kind, range = 12) {
     case 'cresc': return (x) => -range / 2 + range * x;
     case 'decresc': return (x) => range / 2 - range * x;
     case 'messa': return (x) => (x < 0.5 ? -range / 2 + range * 2 * x : range / 2 - range * 2 * (x - 0.5));
+    case 'steps': return (x) => (x < 1 / 3 ? -range / 2 : x < 2 / 3 ? range / 2 : 0); // piano – forte – mezzoforte
     default: return () => 0;
   }
 }
