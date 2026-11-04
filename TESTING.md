@@ -44,7 +44,12 @@ Věci, které automatické testy ověřit nemohou: skutečný mikrofon, skutečn
 - [ ] **＋ Přidat → Z MIDI nebo karaoke**: stáhni si do telefonu pár .kar/.mid souborů, vyber jeden → melodie je odhadnutá správně (▶ si stopu poslechni), text sedí; pak vyber víc souborů najednou → objeví se v **Moje**.
 - [ ] Píseň z MIDI hraje s **původním aranžmá z MIDI** (basa, bicí, akordy).
 
-## 8. Offline a data (30 s)
+## 8. Hry (3 min)
+- [ ] Záložka **Hry**: Nauka → **Noty na osnově** úroveň 1 – noty jsou čitelné, po 10 otázkách výsledek a odemčená úroveň 2.
+- [ ] Poslech → **Intervaly sluchem**: tóny hrají, po odpovědi je vysvětlení s opěrnou písní.
+- [ ] Zpěv → **Pa-pa-pa do metronomu**: po kole vidíš přesnost (ms napřed/pozdě) a pravidelnost; **Drž tempo** řekne, jestli zrychluješ/zpomaluješ.
+
+## 9. Offline a data (30 s)
 - [ ] Zapni režim letadlo, zavři a znovu otevři aplikaci z plochy: vše funguje, ladička i písně s doprovodem.
 - [ ] **Já → Záloha a obnova → Vytvořit zálohu**: soubor se uloží.
 

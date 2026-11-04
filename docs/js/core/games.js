@@ -50,7 +50,7 @@ export const VALUES = {
   'h.': { beats: 3, name: 'půlová s tečkou' }, 'q.': { beats: 1.5, name: 'čtvrťová s tečkou' },
   wr: { beats: 4, name: 'celá pomlka' }, hr: { beats: 2, name: 'půlová pomlka' }, qr: { beats: 1, name: 'čtvrťová pomlka' }, er: { beats: 0.5, name: 'osminová pomlka' },
 };
-const beatsLabel = (b) => (b === 0.25 ? '¼ doby' : b === 0.5 ? '½ doby' : b === 1.5 ? '1½ doby' : b === 1 ? '1 doba' : b < 5 ? `${b} doby` : `${b} dob`);
+const beatsLabel = (b) => { const w = Math.floor(b), f = b - w; const t = (w || '') + (f === 0.25 ? '¼' : f === 0.5 ? '½' : f === 0.75 ? '¾' : ''); return b === 1 ? '1 doba' : b < 1 ? `${t} doby` : b < 5 ? `${t} doby` : `${t} dob`; };
 
 // ---------- tóniny ----------
 const SHARP_KEYS = [['C dur', 'a moll'], ['G dur', 'e moll'], ['D dur', 'h moll'], ['A dur', 'fis moll'], ['E dur', 'cis moll'], ['H dur', 'gis moll']];

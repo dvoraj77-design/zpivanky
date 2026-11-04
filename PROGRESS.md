@@ -32,6 +32,11 @@ Podle tohoto souboru se dá kdykoli navázat. Pořadí: celek → obsah → test
 - Nácvik fráze po celých taktech s přípravným taktem.
 - MP3 import přesunut mezi experimentální, stažení modelu pokračuje po výpadku sítě.
 
+## Kolo 4 – průzkum, hry, menu (hotovo)
+- `RESEARCH.md`: zdroje k přesnosti zpěvu, zpětné vazbě, dechu, hlasové hygieně, Kodályově a Gordonově metodě, intervalům, opakování a rytmu; opravy textů kurzu a nápovědy.
+- Hry: 5 her z nauky, 6 poslechových, 8 zpívacích, každá s 5 úrovněmi; výsledky, rekordy, odemykání, opakování podle chyb.
+- Menu: záložka Hry, Já ve skupinách, sluchový trénink v Hrách.
+
 ## Další nápady
 - Ruční editor jednotlivých not importované písně (táhnout výš/níž, délka).
 - Původní zpěv jako vodicí hlas (místo syntetického) v režimu Zpívat.

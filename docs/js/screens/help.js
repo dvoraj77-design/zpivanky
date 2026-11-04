@@ -62,12 +62,17 @@ export const HELP = [
     'Každý telefon má **svá vlastní data** – profil hlasu, pokrok i nahrávky zůstávají jen v něm. Když chcete zpívat dva, nainstalujte si aplikaci každý na svůj telefon ze stejné adresy. Je to zdarma a nic se nemíchá.',
     'Přenos dat na nový telefon: **Já → Záloha a obnova** → vytvoř zálohu, pošli si soubor a na novém telefonu ho obnov.',
   ] },
+  { id: 'games', icon: '🎮', title: 'Hry', body: [
+    '**Hry** (záložka dole) jsou krátká kola na 1–2 minuty ve třech skupinách: **📖 Nauka** (noty na osnově, klaviatura, intervaly, délky not, předznamenání), **👂 Poslech** (vyšší/nižší, intervaly, dur/moll, solmizace, rytmický diktát, směr melodie) a **🎤 Zpěv** (napodob tón, rychlá trefa, pa-pa-pa do metronomu, drž tempo, síla hlasu, rychlé tóny, melodie z paměti, dlouhý rovný tón).',
+    'Každá hra má **5 úrovní** od začátečníka po mistra. Další úroveň se odemkne, když získáš aspoň ⭐ (50 bodů). Co ti nejde, aplikace připomíná častěji.',
+    'Rytmické hry měří zvlášť **přesnost** (jestli předbíháš, nebo se zpožďuješ) a **pravidelnost** (jak moc kolísáš). „Drž tempo“ zjistí, jestli bez metronomu zrychluješ, nebo zpomaluješ.',
+  ] },
   { id: 'offkey', icon: '🎯', title: 'Zpívám falešně – co s tím?', body: [
     'Asi 10–15 % dospělých zpívá o půltón i víc vedle. Většinou to **není hudební hluch** – rozdíly ve výšce slyší dobře, jen se ještě nepropojilo slyšení s pohybem hlasu. To se dá natrénovat.',
     'Typická chyba: **skoky zmenšuješ** (zazpíváš menší interval), ale směr nahoru/dolů máš správně. Mysli skoky **o kus větší** a sleduj křivku.',
     'Pomáhá **zpětná vazba na obrazovce** (křivka a barvy) – proto ji aplikace ukazuje. Až to půjde, zkus i cvičení „naslepo“.',
     'Zpívej v **pohodlné poloze** (aplikace ji nastaví podle testu hlasu) a klidně si jako vodicí melodii zapni **hlas**, ne klavír – hlas se napodobuje snáz.',
-    'Krátce a často: **5–10 minut denně** je lepší než hodina jednou týdně. Pomáhají cvičení na trefení tónu a sluchový trénink.',
+    'Krátce a často: **5–10 minut denně** je lepší než hodina jednou týdně. Hry „Napodob tón“, „Rychlá trefa“ a „Intervaly sluchem“ trénují přesně tohle.',
   ] },
   { id: 'safety', icon: '🩺', title: 'Bezpečnost hlasu', body: [
     'Zpívej **uvolněně**, nikdy přes bolest. Pij vodu a dělej pauzy (aplikace připomene každých 15 minut). Začni jemně – bručením „mmm“ nebo „brrr“ rty.',

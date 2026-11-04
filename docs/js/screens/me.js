@@ -20,21 +20,30 @@ import { APP_VERSION } from '../version.js';
 export function MeScreen() {
   const st = useAppState();
   const s = profileSummary(st.profile, st.settings.notation);
-  const items = [
-    ['/help', '❓', 'Jak to funguje', 'Nápověda a vysvětlení od úplného začátku'],
-    ['/voice', '🎙️', 'Můj hlas', `${typeInfo(st.profile.type).name} · ${s.range} · ${s.key}`],
-    ['/progress', '📈', 'Pokrok', `Série ${streak(st.progress)} dní · ${totalMinutes(st.progress)} min celkem`],
-    ['/recordings', '🎧', 'Nahrávky', 'Archiv, přehrání, porovnání, uložení WAV'],
-    ['/audio', '🎧', 'Zvuk a sluchátka', 'Mikrofon, sluchátka, kalibrace zpoždění'],
-    ['/tools', '🧰', 'Nástroje', 'Metronom, referenční tón, bourdon, klavír, stupnice'],
-    ['/ear', '👂', 'Sluchový trénink', 'Intervaly a melodie'],
-    ['/settings', '⚙️', 'Nastavení', 'Značení not, přísnost, doprovod, připomínky'],
-    ['/backup', '💾', 'Záloha a obnova', 'Vše v jednom souboru'],
-    ['/diag', '🩺', 'Diagnostika', 'Když něco nefunguje'],
-    ['/about', 'ℹ️', 'O aplikaci', 'Verze, licence, soukromí'],
+  const groups = [
+    ['Můj zpěv', [
+      ['/voice', '🎙️', 'Můj hlas', `${typeInfo(st.profile.type).name} · ${s.range} · ${s.key}`],
+      ['/progress', '📈', 'Pokrok a odznaky', `Série ${streak(st.progress)} dní · ${totalMinutes(st.progress)} min celkem`],
+      ['/recordings', '🎧', 'Nahrávky', 'Archiv, přehrání, porovnání, uložení WAV'],
+    ]],
+    ['Nástroje', [
+      ['/tuner', '🎯', 'Ladička', 'Živá výška hlasu, bourdon'],
+      ['/tools', '🧰', 'Další nástroje', 'Metronom, referenční tón, klavír, stupnice'],
+    ]],
+    ['Nastavení', [
+      ['/audio', '🎚️', 'Zvuk a sluchátka', 'Mikrofon, sluchátka, kalibrace zpoždění'],
+      ['/settings', '⚙️', 'Nastavení', 'Značení not, přísnost, doprovod, připomínky'],
+      ['/backup', '💾', 'Záloha a obnova', 'Vše v jednom souboru'],
+    ]],
+    ['Pomoc', [
+      ['/help', '❓', 'Jak to funguje', 'Nápověda a vysvětlení od úplného začátku'],
+      ['/diag', '🩺', 'Diagnostika', 'Když něco nefunguje'],
+      ['/about', 'ℹ️', 'O aplikaci', 'Verze, licence, soukromí'],
+    ]],
   ];
   return html`<div class="screen"><h1 class="mb16">Já</h1>
-    <div class="list">${items.map(([h, i, t, sub]) => html`<a class="item" href=${'#' + h}><div class="ic">${i}</div><div class="grow"><div class="t">${t}</div><div class="s ellipsis">${sub}</div></div><div class="chev">›</div></a>`)}</div>
+    ${groups.map(([title, items]) => html`<div class="section-title">${title}</div>
+      <div class="list mb8">${items.map(([h, i, t, sub]) => html`<a class="item" href=${'#' + h}><div class="ic">${i}</div><div class="grow"><div class="t">${t}</div><div class="s ellipsis">${sub}</div></div><div class="chev">›</div></a>`)}</div>`)}
   </div>`;
 }
 

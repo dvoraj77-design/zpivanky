@@ -12,7 +12,8 @@ import { TunerScreen } from './screens/tuner.js';
 import { MeScreen, ProgressScreen, RecordingsScreen, SettingsScreen, BackupScreen, DiagScreen, AboutScreen } from './screens/me.js';
 import { VoiceScreen, VoiceTestScreen } from './screens/voice.js';
 import { AudioScreen, CalibrateScreen } from './screens/audio.js';
-import { ToolsScreen, MetronomeScreen, DroneScreen, PianoScreen, ScalesScreen, EarHub } from './screens/tools.js';
+import { ToolsScreen, MetronomeScreen, DroneScreen, PianoScreen, ScalesScreen } from './screens/tools.js';
+import { GamesScreen, GameLevels, GamePlay } from './screens/games.js';
 import { OnboardingScreen } from './screens/onboarding.js';
 import { PlanScreen } from './screens/plan.js';
 import { TheoryChapterScreen, TheoryLessonScreen } from './screens/theory.js';
@@ -35,7 +36,7 @@ const ROUTES = [
   [/^\/midi$/, () => html`<${MidiImportScreen} />`, 'songs'],
   [/^\/editor$/, () => html`<${SongEditor} />`, 'songs'],
   [/^\/editor\/([\w-]+)$/, (m) => html`<${SongEditor} id=${m[1]} />`, 'songs'],
-  [/^\/tuner$/, () => html`<${TunerScreen} />`, 'tuner'],
+  [/^\/tuner$/, () => html`<${TunerScreen} />`, 'home'],
   [/^\/me$/, () => html`<${MeScreen} />`, 'me'],
   [/^\/voice$/, () => html`<${VoiceScreen} />`, 'me'],
   [/^\/voicetest$/, (m, q) => html`<${VoiceTestScreen} query=${q} />`, 'me'],
@@ -52,7 +53,10 @@ const ROUTES = [
   [/^\/tools\/drone$/, () => html`<${DroneScreen} />`, 'me'],
   [/^\/tools\/piano$/, () => html`<${PianoScreen} />`, 'me'],
   [/^\/tools\/scales$/, () => html`<${ScalesScreen} />`, 'me'],
-  [/^\/ear$/, () => html`<${EarHub} />`, 'me'],
+  [/^\/ear$/, () => { try { sessionStorage.setItem('zp-games-group', 'poslech'); } catch { /* */ } return html`<${GamesScreen} />`; }, 'games'],
+  [/^\/games$/, () => html`<${GamesScreen} />`, 'games'],
+  [/^\/game\/([\w-]+)$/, (m) => html`<${GameLevels} id=${m[1]} />`, 'games'],
+  [/^\/play-game\/([\w-]+)\/(\d)$/, (m) => html`<${GamePlay} key=${m[1] + m[2]} id=${m[1]} level=${m[2]} />`, null],
   [/^\/plan\/(\d+)$/, (m) => html`<${PlanScreen} minutes=${m[1]} />`, 'home'],
 ];
 
@@ -62,7 +66,7 @@ function parseHash() {
   return { path: path || '/', query: new URLSearchParams(qs || '') };
 }
 
-const TABS = [['home', '#/', '🏠', 'Dnes'], ['course', '#/course', '📘', 'Kurz'], ['songs', '#/songs', '🎵', 'Písně'], ['tuner', '#/tuner', '🎯', 'Ladička'], ['me', '#/me', '👤', 'Já']];
+const TABS = [['home', '#/', '🏠', 'Dnes'], ['course', '#/course', '📘', 'Kurz'], ['songs', '#/songs', '🎵', 'Písně'], ['games', '#/games', '🎮', 'Hry'], ['me', '#/me', '👤', 'Já']];
 
 function App() {
   const [route, setRoute] = useState(parseHash());

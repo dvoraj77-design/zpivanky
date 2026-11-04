@@ -36,7 +36,7 @@ export function Staff({ clef = 'G', notes = [], keySig = null, width = 280 }) {
   });
   return html`<svg viewBox=${`0 0 ${width} 120`} width="100%" style="max-width:${width * 1.4}px" role="img" aria-label="Notová osnova">
     ${lines.map((y) => html`<line x1="6" x2=${width - 6} y1=${y} y2=${y} stroke="#9a9cad" stroke-width="1.2" />`)}
-    ${clef === 'G' ? html`<path d=${G_CLEF} fill="none" stroke=${INK} stroke-width="2.6" stroke-linecap="round" transform="translate(4,-4)" />`
+    ${clef === 'G' ? html`<path d=${G_CLEF} fill="none" stroke=${INK} stroke-width="2.6" stroke-linecap="round" transform="translate(4,3)" />`
       : html`<g transform="translate(6,-4)"><path d=${F_CLEF} fill="none" stroke=${INK} stroke-width="3" stroke-linecap="round" /><circle cx="37" cy="45" r="2.4" fill=${INK} /><circle cx="37" cy="57" r="2.4" fill=${INK} /></g>`}
     ${ks.map((k) => html`<text x=${k.x} y=${stepY(k.s, clef) + (keySig.type === '#' ? 6 : 4)} font-size="20" fill=${INK} text-anchor="middle" font-family="serif">${keySig.type === '#' ? '♯' : '♭'}</text>`)}
     ${parts}
@@ -103,7 +103,7 @@ export function RhythmBar({ cells, height = 70 }) {
 }
 
 // ---------- klaviatura ----------
-const WHITE_PC = [0, 2, 4, 5, 7, 9, 11], BLACK = [[1, 0.7], [3, 1.7], [6, 3.7], [8, 4.7], [10, 5.7]];
+const WHITE_PC = [0, 2, 4, 5, 7, 9, 11], BLACK = [[1, 1], [3, 2], [6, 4], [8, 5], [10, 6]]; // [tón, hranice bílých kláves]
 /** Jedna oktáva od C4; marks = MIDI tóny k označení; onTap(pc) = ťukání na klávesy. */
 export function Keyboard({ marks = [], onTap = null, octaves = 1, good = null, bad = null }) {
   const ww = 40, wh = 130, bw = 24, bh = 82;
@@ -112,6 +112,6 @@ export function Keyboard({ marks = [], onTap = null, octaves = 1, good = null, b
   const fill = (k, white) => (good === k ? '#a8dcc9' : bad === k ? '#f5c2ca' : markPc.has(k) ? '#f6d9ad' : white ? '#fff' : '#2b2d42');
   const keys = [];
   for (let i = 0; i < n; i++) { const k = Math.floor(i / 7) * 12 + WHITE_PC[i % 7]; keys.push(html`<rect x=${i * ww + 1} y="1" width=${ww - 2} height=${wh} rx="5" fill=${fill(k, true)} stroke="#9a9cad" style=${onTap ? 'cursor:pointer' : ''} onClick=${onTap ? () => onTap(k % 12) : null} data-key=${k} />`); }
-  for (let o = 0; o < octaves; o++) for (const [pc, pos] of BLACK) { const k = o * 12 + pc; keys.push(html`<rect x=${(o * 7 + pos) * ww + ww / 2 - bw / 2 + 8} y="1" width=${bw} height=${bh} rx="3" fill=${fill(k, false)} stroke="#2b2d42" style=${onTap ? 'cursor:pointer' : ''} onClick=${onTap ? () => onTap(k % 12) : null} data-key=${k} />`); }
+  for (let o = 0; o < octaves; o++) for (const [pc, pos] of BLACK) { const k = o * 12 + pc; keys.push(html`<rect x=${(o * 7 + pos) * ww + 1 - bw / 2} y="1" width=${bw} height=${bh} rx="3" fill=${fill(k, false)} stroke="#2b2d42" style=${onTap ? 'cursor:pointer' : ''} onClick=${onTap ? () => onTap(k % 12) : null} data-key=${k} />`); }
   return html`<svg viewBox=${`0 0 ${n * ww + 2} ${wh + 2}`} width="100%" style="max-width:420px" role="img" aria-label="Klaviatura">${keys}</svg>`;
 }

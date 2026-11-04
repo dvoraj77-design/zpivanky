@@ -14,7 +14,7 @@ import { recordAttempt } from '../core/progress.js';
 import { saveProgress } from '../state.js';
 
 export function ToolsScreen() {
-  const items = [['/tools/metronome', '⏱️', 'Metronom', 'Tempo 40–200, zvýrazněná první doba'], ['/tools/drone', '🎵', 'Referenční tón a bourdon', 'Držený tón jako opora'], ['/tools/piano', '🎹', 'Klavír', 'Zahraj si tón nebo interval'], ['/tools/scales', '🪜', 'Stupnice', 'Volné cvičení v libovolné tónině'], ['/ear', '👂', 'Sluchový trénink', 'Intervaly a melodie'], ['/tuner', '🎯', 'Ladička', 'Živá výška hlasu']];
+  const items = [['/tools/metronome', '⏱️', 'Metronom', 'Tempo 40–200, zvýrazněná první doba'], ['/tools/drone', '🎵', 'Referenční tón a bourdon', 'Držený tón jako opora'], ['/tools/piano', '🎹', 'Klavír', 'Zahraj si tón nebo interval'], ['/tools/scales', '🪜', 'Stupnice', 'Volné cvičení v libovolné tónině'], ['/games', '🎮', 'Hry a sluchový trénink', 'Noty, intervaly, rytmus, zpěv hrou'], ['/tuner', '🎯', 'Ladička', 'Živá výška hlasu']];
   return html`<div class="screen"><${TopBar} title="Nástroje" backTo="/me" />
     <div class="list">${items.map(([h, i, t, s]) => html`<a class="item" href=${'#' + h}><div class="ic">${i}</div><div class="grow"><div class="t">${t}</div><div class="s">${s}</div></div><div class="chev">›</div></a>`)}</div></div>`;
 }

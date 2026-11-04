@@ -39,7 +39,7 @@ export function HomeScreen() {
       <a class="btn" href="#/tools/metronome" style="flex-direction:column;min-height:76px">⏱️<span class="small">Metronom</span></a>
       <a class="btn" href="#/tools/piano" style="flex-direction:column;min-height:76px">🎹<span class="small">Klavír</span></a>
       <a class="btn" href="#/tools/scales" style="flex-direction:column;min-height:76px">🪜<span class="small">Stupnice</span></a>
-      <a class="btn" href="#/ear" style="flex-direction:column;min-height:76px">👂<span class="small">Sluch</span></a>
+      <a class="btn" href="#/games" style="flex-direction:column;min-height:76px">🎮<span class="small">Hry</span></a>
     </div>
     <div class="card warnc small mt16">💧 Při zpěvu pij vodu a dělej pauzy. Když bolí v krku nebo chraptíš, přestaň a dej hlasu odpočinout.</div>
   </div>`;

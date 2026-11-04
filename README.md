@@ -57,8 +57,9 @@ Aplikace se aktualizuje sama: každý push do `main` GitHub Pages za 1–2 minut
 - **Dnes** – denní trénink na 5 / 10 / 20 minut, pokračování v kurzu, rychlé nástroje.
 - **Kurz** – Zpěv (11 kapitol od úplné nuly po rytmus, rozsah, dynamiku a sluch; hvězdičky, odemykání, lze přeskočit) a Hudební nauka (10 kapitol pro laiky).
 - **Písně** – knihovna (cvičné, dětské, lidové, koledy, ze světa) s hledáním, vlastní písně z MIDI/karaoke, doporučená tónina pro tvůj hlas, tempo 50–120 %, režimy Zpívat (vodicí melodie ON/OFF), Nacvičit frázi a Poslech, smyčka fráze, karaoke, mixážní pult, vlastní písně (editor i nazpívání).
-- **Ladička** – nota, oktáva, centy, křivka posledních 10 s, bourdon, klepnutím uslyšíš notu.
-- **Já** – hlasový profil a test hlasu, pokrok a odznaky, archiv nahrávek (porovnání, uložení WAV), zvuk a sluchátka, nástroje, nastavení, záloha, diagnostika.
+- **Hry** – nauka (noty, klaviatura, intervaly, délky not, předznamenání), poslech (vyšší/nižší, intervaly, dur/moll, solmizace, rytmický diktát) a zpěv (napodob tón, rychlá trefa, pa-pa-pa, drž tempo, síla hlasu, rychlé tóny, melodie z paměti, dlouhý tón); každá hra má 5 úrovní.
+- **Ladička** (na obrazovce Dnes a v Já → Nástroje) – nota, oktáva, centy, křivka posledních 10 s, bourdon.
+- **Já** – můj zpěv (hlas, pokrok, nahrávky), nástroje (ladička, metronom, bourdon, klavír, stupnice), nastavení (zvuk a sluchátka, nastavení, záloha) a pomoc.
 
 ## Pro vývoj
 

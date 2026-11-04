@@ -26,7 +26,7 @@ async function playQuiz(page, wrongAt = []) {
   for (let i = 0; i < 10; i++) {
     await page.getByTestId('quiz-view').waitFor();
     const q = await page.evaluate(() => ({ answer: window.zpTest.quiz.answer, tap: !!window.zpTest.quiz.view.tap, labels: window.zpTest.quiz.options.map((o) => [String(o.id), o.label]) }));
-    if (q.tap) await page.locator(`svg rect[data-key="${wrongAt.includes(i) ? (q.answer + 1) % 12 : q.answer}"]`).first().click();
+    if (q.tap) await page.locator(`svg rect[data-key="${wrongAt.includes(i) ? (q.answer + 1) % 12 : q.answer}"]`).first().dispatchEvent('click');
     else {
       const want = wrongAt.includes(i) ? q.labels.find(([id]) => id !== String(q.answer)) : q.labels.find(([id]) => id === String(q.answer));
       await page.getByTestId('quiz-options').getByRole('button', { name: want[1] }).first().click();
@@ -39,7 +39,7 @@ async function playQuiz(page, wrongAt = []) {
 test('Hry: záložka, nauka „Noty na osnově“ – 10 otázek, hvězdičky, odemčení další úrovně', async () => {
   const page = await newPage(env, '/');
   await prep(page);
-  await page.getByRole('link', { name: /Hry/ }).click();
+  await page.locator('nav').getByRole('link', { name: /Hry/ }).click();
   await page.getByTestId('game-noty').waitFor();
   await page.screenshot({ path: OUT + '/hub.png' });
   await page.getByTestId('game-noty').click();
