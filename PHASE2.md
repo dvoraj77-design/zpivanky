@@ -1,5 +1,14 @@
 # Fáze 2 – import vlastních písní (podrobný návrh)
 
+> **Stav (listopad 2026): import je hotový a nasazený.** Písně → ＋ Přidat → Z nahrávky. Co je jinak než v návrhu níže:
+> - Oddělení zpěvu „Přesně“ používá model **MDX-Net Kim_Vocal_2** (33 MB, váhy float16) místo HTDemucs – je menší a na zpěv přesnější; běží v telefonu přes ONNX Runtime Web (grafický čip WebGPU, jinak procesor WASM ve více vláknech). Stahuje se jen jednou na vyžádání (~56 MB i s runtime) do zvláštní cache, ne při instalaci aplikace.
+> - „Rychle“ = maska středu/stran ve spektru; melodie se z ní čte **harmonickou saliencí** (odolná vůči basě a doprovodu uprostřed), z čistého zpěvu modelu přesným detektorem výšky.
+> - Stopy se ukládají do IndexedDB jako 16bit PCM (doprovod stereo 44,1 kHz, zpěv mono 22 kHz; ~11 MB na minutu), ne Opus – kódování přes WebCodecs by potřebovalo kontejner a nepřineslo by nic podstatného pro pár písní. Originál jde u písně smazat a uvolnit místo; do zálohy se nedává.
+> - Kontrola po importu: shrnutí (noty, akordy, tempo, takt, text), úprava názvu, interpreta a **textu** (znovu se rozloží na noty), opětovné dohledání textu, smazání originálu. Noty se opravují zatím jen celé o oktávu (✏️ → Melodie o oktávu); ruční editor jednotlivých not je další krok.
+> - Originální doprovod se zarovná na stálé tempo podle nalezených dob (WSOLA s proměnným krokem) a přehrává se sample-přesně s transportem (smyčky frází, čekání na tón, pauza); tónina se mění posunem ±6 půltónů (zbytek je oktáva), tempo 50–120 % beze změny výšky.
+> - Měřená rychlost: rychlý import 30 s písně ≈ 5 s; přesný ≈ 10× délka úseku na procesoru (3 vlákna) – proto lze vybrat jen úsek (třeba refrén) a aplikace ukazuje odhad zbývajícího času; s grafickým čipem bývá výrazně rychlejší.
+
+
 Cíl: vzít píseň, kterou chceš zpívat, a udělat z ní ve Zpívánkách stejnou „učebnicovou“ píseň jako vestavěné – noty melodie, akordy, tempo, takt, text s časováním a doprovod – aby šla zpívat ve tvé tónině, pomaleji, po frázích a s hodnocením. Pokud možno **zdarma** a **bez účtů**.
 
 ## 1. Odkud vzít zvuk (a co nejde)

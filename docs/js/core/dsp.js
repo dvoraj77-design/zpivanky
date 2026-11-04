@@ -172,3 +172,91 @@ export function renderStem(x, sr, { factor = 1, semis = 0 } = {}) {
 }
 
 export function mixToMono(L, R) { const n = Math.min(L.length, R ? R.length : L.length); const m = new Float32Array(n); for (let i = 0; i < n; i++) m[i] = R ? 0.5 * (L[i] + R[i]) : L[i]; return m; }
+
+/** Podvzorkování na polovinu (FIR dolní propust, Blackmanovo okno, 47 koeficientů). */
+export function decimate2(x) {
+  const taps = 47, h = new Float32Array(taps), c = (taps - 1) / 2;
+  let s = 0;
+  for (let i = 0; i < taps; i++) {
+    const k = i - c, sinc = k === 0 ? 0.5 : Math.sin(Math.PI * 0.5 * k) / (Math.PI * k);
+    const w = 0.42 - 0.5 * Math.cos((2 * Math.PI * i) / (taps - 1)) + 0.08 * Math.cos((4 * Math.PI * i) / (taps - 1));
+    h[i] = sinc * w; s += h[i];
+  }
+  for (let i = 0; i < taps; i++) h[i] /= s;
+  const n = x.length >> 1, y = new Float32Array(n);
+  for (let o = 0; o < n; o++) {
+    const j0 = 2 * o - c; let acc = 0;
+    for (let i = 0; i < taps; i++) { const j = j0 + i; if (j >= 0 && j < x.length) acc += x[j] * h[i]; }
+    y[o] = acc;
+  }
+  return y;
+}
+
+/**
+ * WSOLA s proměnným mapováním času (zarovnání nahrávky na stálé tempo, změna tempa i délky).
+ * chans: kanály (Float32Array), map(i) → pozice ve vstupu (vzorky) pro výstupní vzorek i, outLen: délka výstupu.
+ */
+export function wsolaWarp(chans, sr, map, outLen, { winSec = 0.046, tolSec = 0.012 } = {}) {
+  const N = Math.round(sr * winSec) & ~1, Hs = N >> 1, T = Math.round(sr * tolSec);
+  const x0 = chans[0], n = x0.length;
+  let ref = x0;
+  if (chans.length > 1) { ref = new Float32Array(n); for (let i = 0; i < n; i++) ref[i] = 0.5 * (chans[0][i] + chans[1][i]); }
+  const out = chans.map(() => new Float32Array(outLen + N)), norm = new Float32Array(outLen + N);
+  const w = hann(N, false);
+  let prev = -1;
+  const corr = (s, nat, step) => { let c = 0; for (let k = 0; k < N; k += step) c += ref[s + k] * ref[nat + k]; return c; };
+  for (let op = 0; op < outLen; op += Hs) {
+    const target = Math.round(map(op + Hs) - Hs);
+    let best = target;
+    const nat = prev + Hs;
+    if (prev >= 0 && nat >= 0 && nat + N < n && target - T >= 0 && target + T + N < n) {
+      let bc = 0, bd = 0;
+      for (let d = -T; d <= T; d += 4) { const c = corr(target + d, nat, 8); if (c > bc) { bc = c; bd = d; } }
+      if (bc > 0) { const d0 = bd; for (let d = d0 - 3; d <= d0 + 3; d++) { const c = corr(target + d, nat, 4); if (c > bc) { bc = c; bd = d; } } }
+      best = target + bd;
+    }
+    for (let ch = 0; ch < chans.length; ch++) {
+      const src = chans[ch], o = out[ch];
+      for (let k = 0; k < N; k++) { const i = best + k; if (i >= 0 && i < n) o[op + k] += src[i] * w[k]; }
+    }
+    for (let k = 0; k < N; k++) norm[op + k] += w[k];
+    prev = best;
+  }
+  return out.map((o) => { const y = new Float32Array(outLen); for (let i = 0; i < outLen; i++) y[i] = norm[i] > 1e-3 ? o[i] / norm[i] : 0; return y; });
+}
+
+export function toInt16(x) { const y = new Int16Array(x.length); for (let i = 0; i < x.length; i++) { const v = Math.max(-1, Math.min(1, x[i])); y[i] = Math.round(v * 32767); } return y; }
+export function fromInt16(x) { const y = new Float32Array(x.length); for (let i = 0; i < x.length; i++) y[i] = x[i] / 32767; return y; }
+
+/**
+ * Plán vykreslení originální stopy pro písničku s mapou dob: výstup má stálé tempo (spb = s/dobu), posun výšky semis.
+ * beatTimes: časy dob v nahrávce (s), zero: index doby = doba 0 písně. Vrací {fromBeat, toBeat, rate, outSpb} a mapovací funkci.
+ */
+export function stemPlan(beatTimes, zero, duration, { spb, semis = 0, fromBeat = -Infinity, toBeat: endBeat = Infinity }) {
+  const n = beatTimes.length;
+  const med = n > 1 ? (beatTimes[n - 1] - beatTimes[0]) / (n - 1) : 0.5;
+  const sp0 = n > 1 ? beatTimes[1] - beatTimes[0] : med, sp1 = n > 1 ? beatTimes[n - 1] - beatTimes[n - 2] : med;
+  const inTime = (b) => { // b = doba písně
+    const i = b + zero;
+    if (i <= 0) return beatTimes[0] + i * sp0;
+    if (i >= n - 1) return beatTimes[n - 1] + (i - (n - 1)) * sp1;
+    const k = Math.floor(i), f = i - k; return beatTimes[k] + f * (beatTimes[k + 1] - beatTimes[k]);
+  };
+  const beatOf = (t) => { // inverzní: čas nahrávky → doba písně
+    if (t <= beatTimes[0]) return (t - beatTimes[0]) / sp0 - zero;
+    if (t >= beatTimes[n - 1]) return n - 1 + (t - beatTimes[n - 1]) / sp1 - zero;
+    let lo = 0, hi = n - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (beatTimes[m] <= t) lo = m; else hi = m; }
+    return lo + (t - beatTimes[lo]) / (beatTimes[lo + 1] - beatTimes[lo]) - zero;
+  };
+  const b0 = Math.max(fromBeat, beatOf(0)), b1 = Math.min(endBeat, beatOf(duration));
+  const rate = Math.pow(2, semis / 12);
+  const outSpb = spb * rate; // sekundy bufferu na dobu (přehrává se rychlostí rate)
+  return { fromBeat: b0, toBeat: b1, rate, outSpb, inTime, beatOf };
+}
+
+/** Vykreslí stopu podle plánu: kanály se vzorkovací frekvencí sr → kanály (sr), začátek = plan.fromBeat. */
+export function renderPlannedStem(chans, sr, plan) {
+  const outLen = Math.max(0, Math.round((plan.toBeat - plan.fromBeat) * plan.outSpb * sr));
+  const map = (i) => sr * plan.inTime(plan.fromBeat + i / sr / plan.outSpb);
+  return wsolaWarp(chans, sr, map, outLen);
+}

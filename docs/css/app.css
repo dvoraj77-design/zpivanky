@@ -72,6 +72,7 @@ ul, ol { margin: 6px 0; padding-left: 20px; }
 .card.hero { background: linear-gradient(135deg, #dff3ea 0%, #dce9fa 100%); box-shadow: none; }
 .card.warnc { background: #fff3e8; box-shadow: none; border: 1px solid #fadcc3; color: #5f3a1e; }
 .card.infoc { background: #edf5fd; box-shadow: none; border: 1px solid #d3e5f8; color: #24496f; }
+.card.goodc { background: var(--good-soft); box-shadow: none; border: 1px solid #bfe6d4; color: var(--good-ink); }
 .card.outline { box-shadow: none; border: 2px solid var(--primary-2); }
 .list { display: flex; flex-direction: column; gap: 10px; }
 .item { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 18px; padding: 12px 14px; min-height: 66px; text-decoration: none; color: inherit; border: 0; width: 100%; text-align: left; cursor: pointer; box-shadow: var(--shadow); }

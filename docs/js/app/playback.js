@@ -12,7 +12,8 @@ export async function playAttempt(opts, rec, { fromBeat = 0, toBeat = null, acco
   const events = opts.audio.filter((e) => (e.bus === 'guide' ? guide : accomp)).map((e) => ({ ...e, t: e.t + ci, vel: (e.vel ?? 0.6) * (e.bus === 'guide' ? 0.5 : 0.8) }));
   const tr = new Transport(engine);
   const end = toBeat ?? Math.max(...opts.items.map((i) => i.t + i.d)) + ci + 1;
-  tr.load({ events, tempo: opts.tempo, factor: opts.factor || 1, length: end });
+  const clips = accomp ? (opts.clips || []).filter((c) => c.bus === 'accomp').map((c) => ({ ...c, beat0: c.beat0 + ci })) : [];
+  tr.load({ events, tempo: opts.tempo, factor: opts.factor || 1, length: end, clips });
   const t0 = tr.start(fromBeat, 0.15);
   let src = null;
   if (voice && rec?.pcm?.length) {
@@ -56,6 +57,15 @@ export async function renderMixWav(opts, rec, { accompGain = 0.6, voiceGain = 1 
     const g = off.createGain(); const d = e.d * spb;
     g.gain.setValueAtTime(e.vel ?? 0.6, t); g.gain.setValueAtTime(e.vel ?? 0.6, t + d); g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.3);
     src.connect(g); g.connect(ag); src.start(t); src.stop(t + d + 0.35);
+  }
+  // originální doprovod (bez zpěvu)
+  for (const c of opts.clips || []) {
+    if (c.bus !== 'accomp') continue;
+    const p = c.spb / spb;
+    const t0 = (c.beat0 + ci) * spb - (rec.offset || 0) + (rec.latency || 0);
+    const src = off.createBufferSource(); src.buffer = c.buffer; src.playbackRate.value = p;
+    const g = off.createGain(); g.gain.value = c.gain ?? 1; src.connect(g); g.connect(ag);
+    if (t0 >= 0) src.start(t0, 0); else src.start(0, -t0 * p);
   }
   const buf = await off.startRendering();
   const data = buf.getChannelData(0);

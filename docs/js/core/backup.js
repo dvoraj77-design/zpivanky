@@ -49,7 +49,12 @@ export async function restoreBackup(store, data, { replace = true } = {}) {
   if (errs.length) throw new Error(errs.join(' '));
   if (replace) await store.clearAll();
   for (const [k, v] of Object.entries(data.kv)) await store.setKV(k, v);
-  for (const s of data.songs || []) await store.putSong(s);
+  for (const s of data.songs || []) {
+    // originální zvuk importovaných písní v záloze není (je velký) – po obnovení hraje syntetický doprovod
+    let song = s;
+    if (s.audio?.stems) { const has = store.getStems ? !!(await store.getStems(s.id).catch(() => null)) : false; if (!has) song = { ...s, audio: { ...s.audio, stems: false } }; }
+    await store.putSong(song);
+  }
   for (const a of data.attempts || []) await store.putAttempt(a);
   for (const r of data.recordings || []) {
     const u8 = fromB64(r.pcmB64);

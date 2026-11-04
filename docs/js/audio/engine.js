@@ -223,7 +223,7 @@ export class AudioEngine {
   }
 
   // ---------- Nahrávání ----------
-  startRecording() { this.worker?.postMessage({ type: 'recStart' }); }
+  startRecording({ full = false } = {}) { this.worker?.postMessage({ type: 'recStart', full }); }
   stopRecording() {
     return new Promise((resolve) => {
       const id = Math.random().toString(36).slice(2);

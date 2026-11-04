@@ -221,6 +221,128 @@ export function detectMeter(accent, chroma, bass, lowAcc) {
   return best;
 }
 
+// ---------- melodie ze směsi (harmonická salience) ----------
+/**
+ * Výška hlavní melodie ze zvuku, kde může zůstat doprovod (rychlé oddělení, mikrofon).
+ * Spektrální vrcholy → součet harmonických pro kandidáty f0 (MIDI minMidi–maxMidi), basové pásmo potlačené,
+ * výběr s ohledem na plynulost, rozhodnutí o znělosti podle relativní salience a hlasitosti.
+ * Vrací snímky {t, midi|null, voiced, db} jako detektor výšky.
+ */
+export function melodyFrames(x, sr, { nFft = 2048, hop = 256, minMidi = 43, maxMidi = 86, harmonics = 10, theta = 0.12, lowPrior = 0.06, onProgress } = {}) {
+  const fft = new FFTAny(nFft), win = hann(nFft), half = nFft >> 1;
+  const re = new Float64Array(nFft), im = new Float64Array(nFft), mag = new Float64Array(half + 1);
+  const binHz = sr / nFft, step = 0.1, nb = Math.round((maxMidi - minMidi) / step) + 1;
+  const sal = new Float64Array(nb);
+  const kLo = Math.max(2, Math.floor(100 / binHz)), kHi = Math.min(half - 1, Math.ceil(5000 / binHz));
+  const raw = [];
+  const n = x.length;
+  for (let c = 0; c < n; c += hop) {
+    const s0 = c - half;
+    let e = 0;
+    for (let k = 0; k < nFft; k++) { const i = s0 + k; const v = i >= 0 && i < n ? x[i] : 0; re[k] = v * win[k]; im[k] = 0; e += v * v; }
+    const db = 10 * Math.log10(e / nFft + 1e-12);
+    fft.transform(re, im, false);
+    let mx = 0;
+    for (let k = 0; k <= half; k++) { mag[k] = Math.hypot(re[k], im[k]); if (k >= kLo && k <= kHi && mag[k] > mx) mx = mag[k]; }
+    sal.fill(0);
+    if (mx > 1e-6) {
+      const thr = mx * 0.01;
+      for (let k = kLo; k <= kHi; k++) {
+        const a = mag[k];
+        if (a < thr || a < mag[k - 1] || a < mag[k + 1]) continue;
+        const l1 = Math.log(mag[k - 1] + 1e-12), l2 = Math.log(a + 1e-12), l3 = Math.log(mag[k + 1] + 1e-12);
+        const den = l1 - 2 * l2 + l3, off = den < 0 ? (0.5 * (l1 - l3)) / den : 0;
+        const fp = (k + off) * binHz;
+        const wf = fp < 150 ? 0 : fp < 320 ? (fp - 150) / 170 : 1; // basa a kopák bez váhy
+        if (!wf) continue;
+        const amp = Math.sqrt(a / mx) * wf;
+        for (let h = 1; h <= harmonics; h++) {
+          const m = 69 + 12 * Math.log2(fp / h / 440);
+          if (m < minMidi - 1) break;
+          if (m > maxMidi + 1) continue;
+          const w0 = amp * Math.pow(0.8, h - 1);
+          const cb = (m - minMidi) / step;
+          for (let b = Math.max(0, Math.ceil(cb - 10)); b <= Math.min(nb - 1, Math.floor(cb + 10)); b++) {
+            const d = Math.abs(b - cb) * step; // půltóny
+            const w = Math.cos((Math.PI / 2) * d); sal[b] += w0 * w * w;
+          }
+        }
+      }
+    }
+    // tři nejsilnější kandidáti (lokální maxima)
+    const cands = [];
+    for (let b = 1; b < nb - 1; b++) {
+      if (sal[b] <= 0 || sal[b] < sal[b - 1] || sal[b] < sal[b + 1]) continue;
+      const a = sal[b - 1], v = sal[b], z = sal[b + 1], d2 = a - 2 * v + z, o = d2 < 0 ? (0.5 * (a - z)) / d2 : 0;
+      cands.push({ m: minMidi + (b + o) * step, s: v });
+    }
+    cands.sort((p, q) => q.s - p.s);
+    raw.push({ t: c / sr, db, c: cands.slice(0, 3) });
+    if (onProgress && raw.length % 2000 === 0) onProgress(c / n);
+  }
+  // reference salience: horní kvantil
+  const tops = raw.map((r) => r.c[0]?.s || 0).filter((v) => v > 0).sort((a, b) => a - b);
+  const ref = tops.length ? tops[Math.floor(tops.length * 0.9)] : 1;
+  const dbs = raw.map((r) => r.db).sort((a, b) => a - b);
+  const loud = dbs.length ? dbs[Math.floor(dbs.length * 0.95)] : 0;
+  // výběr: Viterbi přes kandidáty + „ticho“
+  const T = raw.length, NS = 4; // 0..2 kandidáti, 3 = nezněl
+  const cost = new Float64Array(T * NS).fill(Infinity), from = new Int8Array(T * NS);
+  const lnTh = -Math.log(theta);
+  const emit = (r, j) => {
+    const quiet = r.db < loud - 30 ? 2 : r.db < loud - 20 ? 0.7 : 0;
+    if (j === 3) return lnTh - quiet;
+    const c = r.c[j]; if (!c) return Infinity;
+    // mírná přednost vyšším tónům: melodie bývá nad basou a levou rukou doprovodu
+    return -Math.log(Math.max(1e-3, Math.min(1, c.s / ref))) + quiet + (c.m < 57 ? (57 - c.m) * lowPrior : 0);
+  };
+  const trans = (a, b) => { // a, b: {m}|null
+    if (!a && !b) return 0;
+    if (!a || !b) return 0.6;
+    const d = Math.abs(a.m - b.m);
+    return d < 0.6 ? d * 0.3 : 0.25 + Math.min(2.5, d * 0.12) + (Math.abs(d - 12) < 0.7 ? 0.8 : 0);
+  };
+  for (let j = 0; j < NS; j++) cost[j] = emit(raw[0], j);
+  for (let t = 1; t < T; t++) {
+    for (let j = 0; j < NS; j++) {
+      const e = emit(raw[t], j); if (!Number.isFinite(e)) continue;
+      const bj = j === 3 ? null : raw[t].c[j];
+      let best = Infinity, arg = 3;
+      for (let i = 0; i < NS; i++) {
+        const p = cost[(t - 1) * NS + i]; if (!Number.isFinite(p)) continue;
+        const v = p + trans(i === 3 ? null : raw[t - 1].c[i], bj);
+        if (v < best) { best = v; arg = i; }
+      }
+      cost[t * NS + j] = best + e; from[t * NS + j] = arg;
+    }
+  }
+  let j = 0, bc = Infinity;
+  for (let k = 0; k < NS; k++) if (cost[(T - 1) * NS + k] < bc) { bc = cost[(T - 1) * NS + k]; j = k; }
+  const path = new Int8Array(T);
+  for (let t = T - 1; t >= 0; t--) { path[t] = j; j = from[t * NS + j]; }
+  return raw.map((r, t) => {
+    const c = path[t] === 3 ? null : r.c[path[t]];
+    // hlasitost podle salience zvolené výšky: mezi opakovanými slabikami klesne, i když doprovod hraje dál
+    return { t: r.t, midi: c ? c.m : null, voiced: !!c, db: c ? Math.min(r.db, loud + 20 * Math.log10(Math.max(1e-4, c.s / ref))) : r.db };
+  });
+}
+
+/** Oprava oktávových chyb přepisu: osamocený tón o víc než 9 půltónů od obou sousedů se posune o oktávu k nim. */
+export function fixOctaves(notes) {
+  const out = notes.map((n) => ({ ...n }));
+  for (let i = 0; i < out.length; i++) {
+    if (!out[i - 1] || !out[i + 1]) continue; // jen tóny uvnitř melodie (na kraji nejde poznat, co je chyba)
+    const nb = [out[i - 2], out[i - 1], out[i + 1], out[i + 2]].filter(Boolean).map((n) => n.p);
+    const med = nb.sort((x, y) => x - y)[nb.length >> 1];
+    const p = out[i].p, prev = out[i - 1]?.p ?? med, next = out[i + 1]?.p ?? med;
+    if (Math.abs(p - med) > 9 && Math.abs(p - prev) > 7 && Math.abs(p - next) > 7) {
+      const q = p + 12 * Math.round((med - p) / 12);
+      if (Math.abs(q - med) < Math.abs(p - med)) out[i].p = q;
+    }
+  }
+  return out;
+}
+
 // ---------- melodie ----------
 /** Čas (s) → pozice v dobách podle detekovaných dob (lineárně mezi dobami, mimo extrapolace). */
 export function timeToBeatFn(beats) {
@@ -359,7 +481,7 @@ export function lineSyllables(text) {
  */
 export function alignLyrics(notes, lines, { bpb = 4 } = {}) {
   const ns = notes.map((n) => ({ ...n, syl: '', phrase: 0 }));
-  const timed = lines.length && lines.every((l) => l.time != null);
+  let timed = lines.length && lines.every((l) => l.time != null) && ns.every((n) => n.time != null);
   let groups = [];
   if (timed) {
     for (let i = 0; i < lines.length; i++) {
@@ -369,7 +491,11 @@ export function alignLyrics(notes, lines, { bpb = 4 } = {}) {
       g.forEach((n) => { n._used = true; });
       if (g.length) groups.push({ notes: g, text: lines[i].text });
     }
-  } else {
+    // časy textu nesedí k nahrávce (jiná verze, posun) → rozdělit podle pauz
+    const used = groups.reduce((a, g) => a + g.notes.length, 0);
+    if (used < ns.length * 0.6) { timed = false; groups = []; ns.forEach((n) => { delete n._used; }); }
+  }
+  if (!timed) {
     // fráze podle pauz (≥ 1 doba) nebo nejvýše 4 takty
     let g = [];
     ns.forEach((n, i) => {
@@ -407,6 +533,26 @@ export function alignLyrics(notes, lines, { bpb = 4 } = {}) {
   return { notes: ns.filter((n) => groups.some((g) => g.notes.includes(n))).map(({ _used, ...n }) => n), lyrics, phrases };
 }
 
+/** Nový text k importované písni (úprava textu): noty zůstávají, mění se slabiky, řádky a fráze. */
+export function relyricSong(song, lines) {
+  const bt = (song.timing?.beats || []).map((b) => b.time);
+  const zero = song.timing?.zeroBeat || 0;
+  const toTime = bt.length > 1 ? beatToTimeFn(bt) : null;
+  const notes = song.notes.map(({ syl, melisma, ...n }) => ({ ...n, time: toTime ? toTime(n.t + zero) : null }));
+  const al = alignLyrics(notes, lines, { bpb: song.meter[0] });
+  const keep = new Set(al.notes.map((n) => n.t));
+  const extra = notes.filter((n) => !keep.has(n.t)); // noty mimo text: zachovat jako „la“ v nejbližší frázi
+  const all = [...al.notes, ...extra.map((n) => ({ ...n, syl: 'la', phrase: nearestPhrase(al.phrases, n.t) }))].sort((a, b) => a.t - b.t);
+  return { ...song, notes: all.map(({ time, endTime, ...n }) => n), lyrics: al.lyrics, phrases: al.phrases, analysis: { ...(song.analysis || {}), lyricsEdited: true } };
+}
+function nearestPhrase(phrases, t) {
+  let best = 0, bd = Infinity;
+  for (const p of phrases) { const d = t < p.start ? p.start - t : t > p.end ? t - p.end : 0; if (d < bd) { bd = d; best = p.index; } }
+  return best;
+}
+/** Text písně jako řádky (pro úpravy). */
+export function lyricsText(song) { return (song.lyrics || []).map((l) => l.text).join('\n'); }
+
 /** Akordy po dobách → segmenty po půltaktech / taktech (doby písně). */
 export function chordsToSegments(perBeat, beatOffset, bpb, length) {
   const segLen = bpb === 4 ? 2 : bpb;
@@ -429,7 +575,7 @@ export function buildImportedSong(a) {
   const bpb = a.meter;
   const toBeat = timeToBeatFn(a.beats);
   // nula písně = první doba taktu (downbeat), nejpozději 1 takt před prvním tónem
-  let notes = notesFromPitch(a.vocalFrames, toBeat, { grid: a.grid || 0.5 });
+  let notes = fixOctaves(notesFromPitch(a.vocalFrames, toBeat, { grid: a.grid || 0.5 }));
   const firstNoteBeat = notes.length ? notes[0].t : 0;
   let zero = a.downbeat;
   while (zero + bpb <= firstNoteBeat - bpb) zero += bpb; // ořízni dlouhé ticho/předehru na max. ~2 takty

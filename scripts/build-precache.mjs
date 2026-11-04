@@ -6,7 +6,9 @@ const root = new URL('../docs/', import.meta.url).pathname;
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
 const skip = new Set(['sw.js', 'precache.js', '.nojekyll', 'js/version.js']);
 function walk(d) { return readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p) : [p]; }); }
-const files = walk(root).map((p) => relative(root, p).split('\\').join('/')).filter((f) => !skip.has(f)).sort();
+// model a ONNX Runtime (~56 MB) se stahují až na vyžádání (Import → Přesně), ne při instalaci
+const onDemand = (f) => f.startsWith('models/') || f.startsWith('vendor/ort/');
+const files = walk(root).map((p) => relative(root, p).split('\\').join('/')).filter((f) => !skip.has(f) && !onDemand(f)).sort();
 const h = createHash('sha1');
 for (const f of files) { h.update(f); h.update(readFileSync(join(root, f))); }
 const hash = h.digest('hex').slice(0, 10);

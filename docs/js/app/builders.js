@@ -43,20 +43,24 @@ export function exerciseSessionOpts(plan, { guide = true } = {}) {
 /**
  * mode: 'sing' (doprovod + vodicí melodie na přepínač) | 'phrase' (smyčka fráze, volitelně čekání na tón) | 'listen'
  */
-export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', loop = null, wait = false, style, drums, bass, metronome = false } = {}) {
+export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', loop = null, wait = false, style, drums, bass, metronome = false, clips = null } = {}) {
   const song = transposeSong(song0, shift);
   const bpb = song.meter[0];
-  const st = style || state.settings.accStyle;
+  // originální doprovod (importovaná píseň): syntetický doprovod se nehraje
+  const orig = !!clips?.length;
+  const st = orig ? 'none' : style || state.settings.accStyle;
   const acc = st === 'none' ? [] : generateAccompaniment(song, { style: st, bass: bass ?? state.settings.bass, drums: drums ?? state.settings.drums });
   const guide = guideEvents(song, guideInst()).map((e) => ({ ...e, bus: 'guide' }));
   let items = song.notes.map((n) => ({ t: n.t, d: n.d, midi: n.p, syl: lyricSyl(n, song), phrase: n.phrase, kind: 'note', note: n }));
   const audio = [...acc.map((e) => ({ ...e, bus: 'accomp' }))];
-  if (mode === 'listen') { items = items.map((i) => ({ ...i, listen: true })); audio.push(...guide.map((e) => ({ ...e, bus: 'accomp' }))); }
+  const origVoc = orig && clips.some((c) => c.which === 'voc');
+  if (mode === 'listen') { items = items.map((i) => ({ ...i, listen: true })); if (!origVoc) audio.push(...guide.map((e) => ({ ...e, bus: 'accomp' }))); }
   else audio.push(...guide);
   return {
     song, kind: 'pitch', items, audio, tempo: song.tempo, factor, bpb, countIn: bpb, metronome,
     tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0, waitMode: mode === 'phrase' && wait, loop,
     record: mode !== 'listen' && state.settings.saveRecordings, keyPc: keyPc(song.key.tonic) + (song.key.mode === 'minor' ? 3 : 0), length: song.length,
+    clips: orig ? clips.map((c) => (mode === 'listen' && c.which === 'voc' ? { ...c, bus: 'accomp' } : c)) : [],
   };
 }
 

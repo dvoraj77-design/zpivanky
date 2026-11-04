@@ -15,10 +15,14 @@ export class Transport {
     this.onLoop = null; this.onEnd = null;
     this.length = 0;
     this.mute = {}; // inst/bus → bool
+    this.clips = []; // originální stopy: {buffer, beat0 (doba začátku bufferu), spb (s bufferu na dobu), rate, bus, gain}
+    this.clipSrc = [];
+    Transport.last = this; // pro testy
   }
   get spb() { return 60 / (this.tempo * this.factor); }
-  load({ events, tempo, factor = 1, length, loop = null }) {
+  load({ events, tempo, factor = 1, length, loop = null, clips = [] }) {
     this.stop();
+    this.clips = clips;
     this.events = events.slice().sort((a, b) => a.t - b.t);
     this.tempo = tempo; this.factor = factor; this.length = length ?? Math.max(0, ...events.map((e) => e.t + e.d));
     this.loop = loop;
@@ -34,7 +38,28 @@ export class Transport {
     this.idx = this.events.findIndex((e) => e.t >= beat - 1e-6);
     if (this.idx < 0) this.idx = this.events.length;
     this.schedBeat = beat;
+    this._startClips(time, beat);
   }
+  /** Spustí originální stopy od doby beat v čase time (předchozí utne ve stejný okamžik – smyčka bez mezery). */
+  _startClips(time, beat) {
+    const ctx = this.engine.ctx;
+    for (const s of this.clipSrc) { try { s.stop(Math.max(time, this.engine.now)); } catch { /* */ } }
+    this.clipSrc = [];
+    if (!ctx || !this.clips.length || !Number.isFinite(this.spb)) return;
+    for (const c of this.clips) {
+      if (this.mute[c.bus]) continue;
+      const p = c.spb / this.spb; // rychlost přehrání bufferu
+      let off = (beat - c.beat0) * c.spb, when = time;
+      if (off < 0) { when = time - off / p; off = 0; }
+      if (off >= c.buffer.duration) continue;
+      const src = ctx.createBufferSource(); src.buffer = c.buffer; src.playbackRate.value = p;
+      const g = ctx.createGain(); g.gain.value = c.gain ?? 1;
+      src.connect(g); g.connect(this.engine.bus?.[c.bus] || ctx.destination);
+      src.start(Math.max(when, this.engine.now), off);
+      this.clipSrc.push(src);
+    }
+  }
+  _stopClips() { for (const s of this.clipSrc) { try { s.stop(); } catch { /* */ } } this.clipSrc = []; }
   segAtTime(t) {
     let s = this.segments[0];
     for (const x of this.segments) if (x.time <= t + 1e-9) s = x;
@@ -109,6 +134,6 @@ export class Transport {
   }
   pause() { if (!this.playing) return; this.pausedAt = this.currentBeat(); this.playing = false; clearInterval(this.timer); this.segments.push({ time: this.engine.now, beat: this.pausedAt, spb: Infinity }); this._silence(); }
   resume() { if (this.pausedAt == null) return; const b = this.pausedAt; this.pausedAt = null; this.playing = true; this._newSegment(this.engine.now + 0.1, b); this.timer = setInterval(() => this._tick(), 25); }
-  _silence() { for (const v of this.active) v.stop && v.stop(); this.active.clear(); }
+  _silence() { for (const v of this.active) v.stop && v.stop(); this.active.clear(); this._stopClips(); }
   stop() { this.playing = false; this.frozen = false; clearInterval(this.timer); this.timer = null; this._silence(); this._endScheduled = false; }
 }

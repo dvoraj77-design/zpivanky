@@ -40,7 +40,7 @@ self.onmessage = (e) => {
     port.onmessage = (m) => { if (m.data.type === 'chunk' && analyzer) handleChunk(m.data.samples, m.data.t); };
     self.postMessage({ type: 'ready', frameSize: analyzer.n, hop: analyzer.hop, rate: analyzer.sr });
   } else if (d.type === 'recStart') {
-    const factor = sr >= 44100 ? 2 : 1;
+    const factor = d.full ? 1 : sr >= 44100 ? 2 : 1; // full = plná kvalita (import písně z mikrofonu)
     rec = { chunks: [], factor, rate: sr / factor, start: null, phase: 0 };
   } else if (d.type === 'recStop') {
     if (!rec) { self.postMessage({ type: 'rec', pcm: new Int16Array(0), rate: sr, start: 0, id: d.id }); return; }

@@ -10,6 +10,7 @@ import { STYLES } from '../core/accomp.js';
 import { db } from '../store/db.js';
 import { createBackup, restoreBackup, validateBackup } from '../core/backup.js';
 import { engine } from '../audio/engine.js';
+import { workerInfo, modelReady } from '../app/importer.js';
 import { playAttempt, renderMixWav, voiceWav } from '../app/playback.js';
 import { downloadBlob } from '../audio/wav.js';
 import { setupCanvas } from '../ui/pitchroll.js';
@@ -242,6 +243,7 @@ export function BackupScreen() {
     <${TopBar} title="Záloha a obnova" backTo="/me" />
     <div class="card"><p>Všechna data jsou jen v tomto telefonu. Záloha je jeden soubor (profil, pokrok, vlastní písně, nastavení, volitelně nahrávky), který si můžeš uložit třeba na Disk.</p>
       <${Toggle} label="Včetně nahrávek" sub="Soubor bude větší" on=${withRec} onChange=${setWithRec} />
+      <p class="tiny dim">Importované písně se zálohují s notami, akordy a textem; jejich originální zvuk (desítky MB) ne – po obnovení hrají se syntetickým doprovodem, nebo je naimportuj znovu.</p>
       <button class="btn primary block mt8" disabled=${busy} onClick=${exp}>💾 Vytvořit zálohu</button></div>
     <div class="card mt16"><p>Obnova nahradí současná data obsahem zálohy.</p>
       <label class="btn block" style="cursor:pointer">📂 Obnovit ze souboru<input type="file" accept="application/json,.json" style="display:none" onChange=${imp} /></label></div>
@@ -255,7 +257,9 @@ export function DiagScreen() {
   const [last, setLast] = useState(null);
   const wave = useRef(null);
   const [inputs, setInputs] = useState([]);
+  const [imp, setImp] = useState(null);
   useEffect(() => { engine.listInputs().then(setInputs); }, []);
+  useEffect(() => { Promise.all([workerInfo().catch(() => null), modelReady()]).then(([w, m]) => setImp({ ...(w || {}), model: m })); }, []);
   useFrames((fr) => setLast(fr[fr.length - 1]));
   useInterval(() => setD(engine.diagnostics()), 500);
   const ua = navigator.userAgent;
@@ -279,6 +283,7 @@ export function DiagScreen() {
       <span>Vstupní zařízení</span><span>${inputs.map((i) => i.label).join(' · ') || '–'}</span>
       <span>Úložiště</span><span>${'indexedDB' in window ? 'IndexedDB ok' : 'chybí'}, SW ${navigator.serviceWorker?.controller ? 'aktivní' : 'neaktivní'}</span>
       <span>Wake Lock</span><span>${'wakeLock' in navigator ? 'podporováno' : 'ne'}</span>
+      <span>Import (Přesně)</span><span>${imp ? `${imp.gpu ? 'grafický čip (WebGPU)' : 'procesor (WASM)'}, ${imp.coi ? `více vláken (${imp.threads} jader)` : '1 vlákno – otevři aplikaci znovu'}, model ${imp.model ? 'stažený' : 'nestažený'}` : '…'}</span>
     </div></div>
     <div class="card mt16"><b>Surový signál</b><${Scope} /></div>
     </${MicGate}>

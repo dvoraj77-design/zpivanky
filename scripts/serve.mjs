@@ -4,7 +4,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 const root = new URL('../docs/', import.meta.url).pathname;
 
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.txt': 'text/plain; charset=utf-8' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ogg': 'audio/ogg', '.wav': 'audio/wav', '.txt': 'text/plain; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.wasm': 'application/wasm', '.onnx': 'application/octet-stream', '.mp3': 'audio/mpeg' };
 export function start(port = 8099) {
   const srv = createServer(async (req, res) => {
     try {
@@ -16,7 +16,9 @@ export function start(port = 8099) {
       if (!f.startsWith(base)) throw new Error('bad');
       if ((await stat(f).catch(() => null))?.isDirectory()) f = join(f, 'index.html');
       const data = await readFile(f);
-      res.writeHead(200, { 'Content-Type': types[extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+      // stejné hlavičky izolace jako přidává service worker (vícevláknové WASM)
+      const iso = process.env.ZP_NO_COI ? {} : { 'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'require-corp' };
+      res.writeHead(200, { 'Content-Type': types[extname(f)] || 'application/octet-stream', 'Cache-Control': 'no-cache', ...iso });
       res.end(data);
     } catch { res.writeHead(404); res.end('not found'); }
   });

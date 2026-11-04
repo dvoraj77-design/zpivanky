@@ -46,11 +46,20 @@ Režim pro začátečníky je zapnutý: na obrazovkách jsou vysvětlivky (jde j
 
 Aplikace se aktualizuje sama: každý push do `main` GitHub Pages za 1–2 minuty nasadí, a když pak aplikaci otevřeš s internetem, nahoře se objeví **„Je k dispozici nová verze – Aktualizovat“**. Když měníš soubory v `docs/` sám, spusť před commitem `npm run build` – jinak telefon změnu nepozná a dál použije verzi uloženou pro offline režim. Profil, pokrok, vlastní písně i nahrávky zůstávají (jsou v úložišti telefonu, ne v aplikaci). Pro jistotu si občas udělej **Já → Záloha a obnova → Vytvořit zálohu**.
 
+## Import vlastních písní
+
+**Písně → ＋ Přidat → Z nahrávky.** Vyber soubor (MP3, M4A, WAV, OGG, FLAC, nejvýš 8 minut), nebo píseň nahraj mikrofonem, když hraje z jiného zařízení. Aplikace v telefonu oddělí zpěv od doprovodu, převede melodii na noty, najde tempo, takt, akordy a tóninu, dohledá text (lrclib.net – odešle se jen název, interpret a délka) a připraví **originální doprovod bez zpěvu**, který v přehrávači hraje v tvém tempu i tónině. Text a noty jdou potom opravit (✏️).
+
+- **Rychle** – hotovo za pár sekund, oddělení podle stereo obrazu (u mono nahrávky z mikrofonu nefunguje).
+- **Přesně** – model umělé inteligence MDX-Net přímo v telefonu; poprvé se stáhne (~56 MB, doporučujeme Wi-Fi) a pak funguje i offline. Trvá zhruba 4–10× déle než vybraný úsek (s grafickým čipem rychleji) – proto jde vybrat jen část písně, třeba refrén.
+- **Spotify ani YouTube** zvuk webové aplikaci nedají (je chráněný). Pusť píseň nahlas z jiného zařízení a nahraj ji, nebo použij vlastní soubor.
+- Importované písně jsou jen pro tvoje cvičení a zůstávají v telefonu. Originální zvuk zabere asi 11 MB na minutu (u písně jde smazat); do zálohy se nedává.
+
 ## Co kde najdeš
 
 - **Dnes** – denní trénink na 5 / 10 / 20 minut, pokračování v kurzu, rychlé nástroje.
 - **Kurz** – Zpěv (11 kapitol od úplné nuly po rytmus, rozsah, dynamiku a sluch; hvězdičky, odemykání, lze přeskočit) a Hudební nauka (10 kapitol pro laiky).
-- **Písně** – 4 úrovně, doporučená tónina pro tvůj hlas, tempo 50–120 %, režimy Zpívat (vodicí melodie ON/OFF), Nacvičit frázi a Poslech, smyčka fráze, karaoke, mixážní pult, vlastní písně (editor i nazpívání).
+- **Písně** – 4 úrovně, import vlastních nahrávek, doporučená tónina pro tvůj hlas, tempo 50–120 %, režimy Zpívat (vodicí melodie ON/OFF), Nacvičit frázi a Poslech, smyčka fráze, karaoke, mixážní pult, vlastní písně (editor i nazpívání).
 - **Ladička** – nota, oktáva, centy, křivka posledních 10 s, bourdon, klepnutím uslyšíš notu.
 - **Já** – hlasový profil a test hlasu, pokrok a odznaky, archiv nahrávek (porovnání, uložení WAV), zvuk a sluchátka, nástroje, nastavení, záloha, diagnostika.
 
@@ -78,4 +87,4 @@ npm run build
 
 ## Licence zvuků a písma
 
-Klavír: Salamander Grand Piano V3 (Alexander Holm, CC-BY 3.0). Kytara a basa: tonejs-instruments (CC-BY 3.0). Písmo Nunito (SIL OFL 1.1). Preact + htm (MIT). Melodie „Óda na radost“ (Beethoven) a „Ah! vous dirai-je, maman“ jsou volné dílo; ostatní melodie a všechny texty jsou původní.
+Import: ONNX Runtime Web 1.20.1 (Microsoft, MIT), model MDX-Net Kim_Vocal_2 (KimberleyJensen, šířený s Ultimate Vocal Remover; viz `docs/models/README.txt`). Klavír: Salamander Grand Piano V3 (Alexander Holm, CC-BY 3.0). Kytara a basa: tonejs-instruments (CC-BY 3.0). Písmo Nunito (SIL OFL 1.1). Preact + htm (MIT). Melodie „Óda na radost“ (Beethoven) a „Ah! vous dirai-je, maman“ jsou volné dílo; ostatní melodie a všechny texty jsou původní.

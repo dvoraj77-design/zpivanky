@@ -19,6 +19,12 @@ Podle tohoto souboru se dá kdykoli navázat. Pořadí: celek → obsah → test
 - Jednorázově zapnout GitHub Pages: Settings → Pages → Deploy from a branch → `main` → `/docs` → Save (viz README).
 - Projít `TESTING.md` na telefonu se sluchátky.
 
-## Nápady pro fázi 2
-- Server: import písní (Spotify / soubor), oddělení vokálu, přepis melodie, akordy a časování textu → formát v `SONG_FORMAT.md` (`timing`, `audio.stems`, `analysis`).
-- Time-stretch/pitch-shift nahrávek, přehrávání stop místo syntetického doprovodu.
+## Fáze 2 – import písní (hotovo)
+- Jádro: FFT libovolné délky, STFT/ISTFT jako torch, MDX-Net (ONNX), rychlá maska středu, tempo a doby (spektrální tok + DP), takt, akordy (harmonická chroma + Viterbi), přepis melodie (detektor / harmonická salience), oprava oktáv, české slabiky, LRC, sestavení písně, WSOLA (tempo, zarovnání na stálé tempo, posun výšky).
+- Aplikace: obrazovka Import (soubor / mikrofon, název z ID3 nebo jména souboru, úsek, Rychle / Přesně s odhadem času, text Dohledat / Vložit / Bez textu), průběh se zrušením, stažení modelu do telefonu, shrnutí po importu, úprava textu a názvu, smazání originálu, originální doprovod v přehrávači (tempo, tónina, smyčky, poslech s původním zpěvem).
+- Service worker: hlavičky izolace (vícevláknové WASM), model v cache na vyžádání.
+- Testy: `tests/unit/import.test.mjs`, `tests/unit/import2.test.mjs`, `tests/e2e/import.test.mjs` (rychlý import se zarovnaným textem z podvrženého lrclib, přehrání originálu v 70 % a +3 půltónech, úprava textu, přesný import s modelem ve WASM, nahrání mikrofonem).
+
+## Další nápady
+- Ruční editor jednotlivých not importované písně (táhnout výš/níž, délka).
+- Původní zpěv jako vodicí hlas (místo syntetického) v režimu Zpívat.

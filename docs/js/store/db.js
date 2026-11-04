@@ -1,6 +1,7 @@
-// IndexedDB úložiště: kv (profil, pokrok, nastavení…), songs (vlastní písně), attempts (pokusy), recordings (nahrávky).
+// IndexedDB úložiště: kv (profil, pokrok, nastavení…), songs (vlastní písně), attempts (pokusy), recordings (nahrávky),
+// stems (originální doprovod a zpěv importovaných písní).
 const DB_NAME = 'zpivanky';
-const DB_VER = 1;
+const DB_VER = 2;
 let dbp = null;
 
 function open() {
@@ -14,6 +15,7 @@ function open() {
       if (!db.objectStoreNames.contains('attempts')) { const s = db.createObjectStore('attempts', { keyPath: 'id', autoIncrement: true }); s.createIndex('itemId', 'itemId'); }
       if (!db.objectStoreNames.contains('recordings')) db.createObjectStore('recordings', { keyPath: 'id' });
       if (!db.objectStoreNames.contains('recmeta')) db.createObjectStore('recmeta', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('stems')) db.createObjectStore('stems', { keyPath: 'id' }); // originální zvuk importovaných písní
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -62,6 +64,9 @@ export const db = {
     });
   },
   async deleteRecording(id) { return tx(['recordings', 'recmeta'], 'readwrite', ([a, b]) => { a.delete(id); b.delete(id); }); },
-  async clearAll() { return tx(['kv', 'songs', 'attempts', 'recordings', 'recmeta'], 'readwrite', (ss) => { for (const s of ss) s.clear(); }); },
+  async getStems(id) { return tx('stems', 'readonly', (s) => req2p(s.get(id))); },
+  async putStems(st) { return tx('stems', 'readwrite', (s) => { s.put(st); }); },
+  async deleteStems(id) { return tx('stems', 'readwrite', (s) => { s.delete(id); }); },
+  async clearAll() { return tx(['kv', 'songs', 'attempts', 'recordings', 'recmeta', 'stems'], 'readwrite', (ss) => { for (const s of ss) s.clear(); }); },
   async estimate() { try { return await navigator.storage.estimate(); } catch { return null; } },
 };

@@ -2,9 +2,11 @@
 import { html, render, useState, useEffect, ToastHost, toast, navigate } from './ui/common.js';
 import { state, loadState, subscribe, saveSettings } from './state.js';
 import { engine } from './audio/engine.js';
+import { Transport } from './audio/transport.js';
 import { HomeScreen } from './screens/home.js';
 import { CourseScreen, ChapterScreen, LessonScreen } from './screens/course.js';
 import { SongsScreen, SongDetail, SongPlay, SongEditor } from './screens/songs.js';
+import { ImportScreen } from './screens/import.js';
 import { TunerScreen } from './screens/tuner.js';
 import { MeScreen, ProgressScreen, RecordingsScreen, SettingsScreen, BackupScreen, DiagScreen, AboutScreen } from './screens/me.js';
 import { VoiceScreen, VoiceTestScreen } from './screens/voice.js';
@@ -26,8 +28,9 @@ const ROUTES = [
   [/^\/course\/([\w-]+)$/, (m) => html`<${ChapterScreen} id=${m[1]} />`, 'course'],
   [/^\/lesson\/([\w-]+)$/, (m) => html`<${LessonScreen} id=${m[1]} />`, 'course'],
   [/^\/songs$/, () => html`<${SongsScreen} />`, 'songs'],
-  [/^\/song\/([\w-]+)$/, (m) => html`<${SongDetail} id=${m[1]} />`, 'songs'],
+  [/^\/song\/([\w-]+)$/, (m, q) => html`<${SongDetail} id=${m[1]} query=${q} />`, 'songs'],
   [/^\/play\/([\w-]+)$/, (m, q) => html`<${SongPlay} id=${m[1]} query=${q} />`, 'songs'],
+  [/^\/import$/, () => html`<${ImportScreen} />`, 'songs'],
   [/^\/editor$/, () => html`<${SongEditor} />`, 'songs'],
   [/^\/editor\/([\w-]+)$/, (m) => html`<${SongEditor} id=${m[1]} />`, 'songs'],
   [/^\/tuner$/, () => html`<${TunerScreen} />`, 'tuner'],
@@ -141,6 +144,7 @@ window.zpTest = {
   async loadInput(url) { return engine.loadTestInput(url); },
   clearInput() { engine.testBuffer = null; engine.stopTestInput(); },
   diag() { return engine.diagnostics(); },
+  get transport() { return Transport.last; },
 };
 
 boot();

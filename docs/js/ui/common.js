@@ -149,6 +149,8 @@ export function fmtNote(midi, keyPc) {
   if (midi == null) return '–';
   return noteName(midi, { style: st, keyPc: st === 'solf' ? keyPc ?? 0 : undefined, octave: st !== 'solf' });
 }
+/** České skloňování podle počtu: plural(3, 'nota', 'noty', 'not') → '3 noty'. */
+export function plural(n, one, few, many) { const a = Math.abs(n); return `${n} ${a === 1 ? one : a >= 2 && a <= 4 ? few : many}`; }
 export function fmtTime(sec) { const s = Math.max(0, Math.round(sec)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
 export function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' }); } catch { return iso; } }
 

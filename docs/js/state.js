@@ -81,6 +81,7 @@ export async function saveCustomSong(song) {
 }
 export async function deleteCustomSong(id) {
   await db.deleteSong(id);
+  await db.deleteStems(id).catch(() => {});
   state.customSongs = state.customSongs.filter((s) => s.id !== id);
   emit();
 }

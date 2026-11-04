@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { launch, sleep } from './helpers.mjs';
 
+// vývojový server hlavičky izolace nepošle – musí je přidat service worker (jako na GitHub Pages)
+process.env.ZP_NO_COI = '1';
 let env;
 before(async () => { env = await launch({ port: 8151 }); });
 after(async () => { await env?.close(); });
@@ -26,7 +28,11 @@ test('po prvním načtení běží offline a neposílá nic ven', async () => {
   await page.reload();
   await page.waitForFunction(() => window.zpTest && window.zpTest.state.ready, null, { timeout: 15000 });
   await page.evaluate(() => window.zpTest.saveSettings({ onboarded: true }));
-  for (const r of ['/', '/course', '/lesson/c1l1', '/songs', '/song/hvezdicka', '/tuner', '/me', '/progress', '/tools/piano']) {
+  // izolace (COOP/COEP) z service workeru → vícevláknový výpočet; model se při instalaci nestahuje
+  assert.equal(await page.evaluate(() => self.crossOriginIsolated), true, 'crossOriginIsolated');
+  assert.equal(await page.evaluate(async () => (await caches.keys()).includes('zp-models-v1')), false, 'model se nestahuje předem');
+  assert.equal(await page.evaluate(async () => { const c = await caches.open((await caches.keys())[0]); return (await c.keys()).filter((r) => /models\/|vendor\/ort\//.test(r.url)).length; }), 0);
+  for (const r of ['/', '/course', '/lesson/c1l1', '/songs', '/song/hvezdicka', '/tuner', '/me', '/progress', '/tools/piano', '/import']) {
     await page.evaluate((r) => { location.hash = '#' + r; }, r);
     await sleep(300);
     const t = await page.evaluate(() => document.body.innerText.length);

@@ -36,7 +36,17 @@ Věci, které automatické testy ověřit nemohou: skutečný mikrofon, skutečn
 - [ ] Obrazovka během zpěvu nezhasne.
 - [ ] Na výsledku **WAV s doprovodem** → soubor je ve Stažených a dá se přehrát.
 
-## 7. Offline a data (30 s)
+## 7. Import písně (5 min)
+- [ ] **Písně → ＋ Přidat → Z nahrávky → Soubor z telefonu**: vyber MP3 se zpěvem; název a interpret se předvyplní.
+- [ ] Nech **Rychle**, text **Dohledat** → za pár sekund „✅ Píseň je připravená“ (počet not, akordy, tempo, text).
+- [ ] **Poslech** s doprovodem **🎧 Originál (bez zpěvu)**: hraje původní píseň i se zpěvem, melodie a text běží s ní.
+- [ ] **Zpívat** v 70 % a v doporučené tónině: originální doprovod zpomalí beze změny výšky a sedí s vodicí melodií.
+- [ ] Stejnou píseň (nebo jen refrén – posuvníky Začátek/Konec) zkus **Přesně**: poprvé se stáhne model (~56 MB), ukazuje se odhad času; pak porovnej noty.
+- [ ] **✏️ → Opravit noty**: klepni na notu, posuň ji ▲▼, ulož. **Text**: uprav řádek a ulož – slabiky se přerozdělí.
+- [ ] **Nahrát mikrofonem**: pusť píseň z počítače, nahraj 30 s, **Přesně** → píseň vznikne.
+- [ ] V Diagnostice / na obrazovce průběhu je vidět, jestli počítal **grafický čip** nebo **procesor** (napiš mi, co se ukázalo a jak dlouho to trvalo).
+
+## 8. Offline a data (30 s)
 - [ ] Zapni režim letadlo, zavři a znovu otevři aplikaci z plochy: vše funguje, ladička i písně s doprovodem.
 - [ ] **Já → Záloha a obnova → Vytvořit zálohu**: soubor se uloží.
 

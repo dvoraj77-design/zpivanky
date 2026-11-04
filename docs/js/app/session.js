@@ -60,7 +60,8 @@ export class Session {
     if (o.metronome) ev.push(...metronomeEvents(ci, len, o.bpb));
     this.length = len;
     const loop = o.loop ? { from: o.loop.from + ci, to: o.loop.to + ci } : null;
-    this.transport.load({ events: ev, tempo: o.tempo, factor: o.factor, length: len, loop });
+    const clips = (o.clips || []).map((c) => ({ ...c, beat0: c.beat0 + ci }));
+    this.transport.load({ events: ev, tempo: o.tempo, factor: o.factor, length: len, loop, clips });
     this.transport.onLoop = () => { this.pass++; this._emit(); };
     this.transport.onEnd = () => this.finish();
     this.frames = []; this.curve = []; this.results = {};
