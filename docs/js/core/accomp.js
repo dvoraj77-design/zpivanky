@@ -3,12 +3,21 @@ import { parseChord } from './music.js';
 
 export const STYLES = {
   piano: 'Klavírní akordy',
-  arpeggio: 'Rozložené akordy',
+  arpeggio: 'Rozložené akordy (klavír)',
   guitar: 'Kytara (brnkání)',
+  nylon: 'Klasická kytara (prsty)',
+  strings: 'Smyčce (držené akordy)',
+  organ: 'Varhany',
+  band: 'Kapela (klavír, basa, bicí)',
   none: 'Bez doprovodu',
 };
 
-export const INSTRUMENT_RANGES = { piano: [21, 108], guitar: [40, 79], bass: [28, 60], guide: [24, 96], drum: [0, 127] };
+export const INSTRUMENT_RANGES = {
+  piano: [21, 108], guitar: [40, 79], bass: [28, 60], guide: [24, 96], drum: [0, 127],
+  nylon: [40, 88], violin: [55, 100], cello: [36, 76], organ: [24, 96], flute: [60, 96], clarinet: [50, 91], sax: [49, 81],
+};
+/** Role události doprovodu → sběrnice mixu (akordy, basa, bicí). */
+export const roleOf = (e) => e.role || (e.inst === 'bass' ? 'bass' : e.inst === 'drum' ? 'drums' : 'chords');
 
 function voiceChord(pcs, prev, lo = 55, hi = 72) {
   // všechny kombinace oktáv pro jednotlivé tóny v rozsahu, vyber nejbližší k předchozímu
@@ -69,13 +78,16 @@ export function generateAccompaniment(song, o = {}) {
     if (isLast) {
       // závěrečný akord: držet
       const hold = Math.max(c.d, bpb);
-      voicing.forEach((m) => ev.push({ t: c.t, d: hold + 1, midi: m, inst: style === 'guitar' ? 'guitar' : 'piano', vel: 0.5 }));
-      if (bassOn) ev.push({ t: c.t, d: hold + 1, midi: bass, inst: 'bass', vel: 0.7 });
-      else if (style !== 'none') ev.push({ t: c.t, d: hold + 1, midi: bass, inst: 'piano', vel: 0.5 });
+      if (style === 'none') return;
+      const ci2 = { guitar: 'guitar', nylon: 'nylon', organ: 'organ' }[style];
+      voicing.forEach((m) => ev.push({ t: c.t, d: hold + 1, midi: m, inst: ci2 || (style === 'strings' ? (m >= 60 ? 'violin' : 'cello') : 'piano'), vel: 0.5 }));
+      const bi = style === 'strings' ? 'cello' : style === 'organ' ? 'organ' : style === 'nylon' ? 'nylon' : bassOn || style === 'band' ? 'bass' : 'piano';
+      ev.push({ t: c.t, d: hold + 1, midi: bi === 'bass' ? bass : Math.max(bi === 'nylon' ? 40 : 36, bass), inst: bi, vel: bi === 'bass' ? 0.7 : 0.5, role: 'bass' });
       return;
     }
-    // basa
-    const bassInst = bassOn ? 'bass' : style === 'none' || style === 'guitar' ? null : 'piano';
+    // basa (smyčce: violoncello, varhany: pedál, klasická kytara hraje basu sama)
+    const bassInst = style === 'nylon' ? null : style === 'strings' ? (bassOn ? 'cello' : null) : style === 'organ' ? (bassOn ? 'organ' : null)
+      : bassOn || style === 'band' ? 'bass' : style === 'none' || style === 'guitar' ? null : 'piano';
     if (bassInst) {
       for (let t = c.t; t < segEnd - 1e-9;) {
         const pos = beatsIn(t);
@@ -84,7 +96,12 @@ export function generateAccompaniment(song, o = {}) {
         const isSecondHalf = bpb === 4 && Math.abs(pos - 2) < 1e-9 && t > c.t + 1e-9;
         const fifth = ch.intervals.includes(7) ? bass + 7 : bass;
         const m = isSecondHalf ? (fifth <= 52 ? fifth : bass) : bass;
-        ev.push({ t, d: d * 0.95, midi: m, inst: bassInst, vel: bassOn ? 0.75 : 0.45 });
+        const low = bassInst === 'cello' || bassInst === 'organ' ? Math.max(36, m) : m;
+        if (style === 'band' && bpb === 4 && d >= 2 - 1e-9) {
+          // kapela: basa na 1 a „a“ za druhou dobou
+          ev.push({ t, d: 1.4, midi: low, inst: bassInst, vel: 0.78, role: 'bass' });
+          ev.push({ t: t + 1.5, d: 0.45, midi: low, inst: bassInst, vel: 0.6, role: 'bass' });
+        } else ev.push({ t, d: d * 0.95, midi: low, inst: bassInst, vel: bassOn || style === 'band' ? 0.75 : 0.45, role: 'bass' });
         t += d;
       }
     }
@@ -103,6 +120,38 @@ export function generateAccompaniment(song, o = {}) {
           voicing.forEach((m) => ev.push({ t, d: (next - t) * 0.95, midi: m, inst: 'piano', vel: 0.42 }));
           t = next;
         }
+      }
+    } else if (style === 'strings' || style === 'organ') {
+      // držené akordy po celou dobu akordu
+      const inst = style === 'organ' ? 'organ' : null;
+      voicing.forEach((m) => ev.push({ t: c.t, d: c.d * 0.98, midi: m, inst: inst || (m >= 60 ? 'violin' : 'cello'), vel: style === 'organ' ? 0.36 : 0.42 }));
+    } else if (style === 'nylon') {
+      // prstoklad: basa na těžké době, akordové tóny v osminách
+      const root = bass < 40 ? bass + 12 : bass;
+      const fifthB = ch.intervals.includes(7) && root + 7 <= 52 ? root + 7 : root;
+      const top = voicing.filter((m) => m > root + 7).slice(-3);
+      const tones = top.length >= 2 ? top : voicing.slice(-3);
+      const pat = bpb === 3 ? [['b', 0], [0, 0.5], [1, 1], [2, 1.5], [1, 2], [0, 2.5]]
+        : bpb === 2 ? [['b', 0], [0, 0.5], [1, 1], [2, 1.5]]
+          : [['b', 0], [0, 0.5], [1, 1], [2, 1.5], ['f', 2], [0, 2.5], [1, 3], [2, 3.5]];
+      for (let barT = Math.floor(c.t / bpb) * bpb; barT < segEnd - 1e-9; barT += bpb) {
+        for (const [what, off] of pat) {
+          const t = barT + off;
+          if (t < c.t - 1e-9 || t >= segEnd - 1e-9) continue;
+          if (what === 'b' || what === 'f') ev.push({ t, d: Math.min(2, segEnd - t), midi: what === 'b' ? root : fifthB, inst: 'nylon', vel: 0.55, role: 'bass' });
+          else ev.push({ t, d: Math.min(1.5, segEnd - t), midi: tones[Math.min(what, tones.length - 1)], inst: 'nylon', vel: 0.38 });
+        }
+      }
+    } else if (style === 'band') {
+      // kapela: klavír na 1, „a“ za dvojkou a na 3 (4/4), jinak na doby
+      const hits = bpb === 4 ? [0, 1.5, 2, 3.5] : bpb === 3 ? [0, 1, 2] : [0, 1];
+      for (let barT = Math.floor(c.t / bpb) * bpb; barT < segEnd - 1e-9; barT += bpb) {
+        hits.forEach((off, k) => {
+          const t = barT + off;
+          if (t < c.t - 1e-9 || t >= segEnd - 1e-9) return;
+          const next = hits[k + 1] != null ? barT + hits[k + 1] : barT + bpb;
+          voicing.forEach((m) => ev.push({ t, d: Math.min(next, segEnd) - t - 0.05, midi: m, inst: 'piano', vel: off % 1 ? 0.34 : 0.4 }));
+        });
       }
     } else if (style === 'arpeggio') {
       const i3 = ch.intervals[1], i5 = ch.intervals[2] ?? 7;
@@ -132,7 +181,7 @@ export function generateAccompaniment(song, o = {}) {
       }
     }
   });
-  if (drums && style !== 'none') {
+  if ((drums || style === 'band') && style !== 'none') {
     for (let t = 0; t < end - 1e-9; t += 0.5) {
       const pos = t % bpb;
       if (Math.abs(pos) < 1e-9 || (bpb === 4 && Math.abs(pos - 2) < 1e-9)) ev.push({ t, d: 0.3, midi: 36, inst: 'drum', vel: 0.6 });

@@ -11,6 +11,7 @@ import { db } from '../store/db.js';
 import { createBackup, restoreBackup, validateBackup } from '../core/backup.js';
 import { engine } from '../audio/engine.js';
 import { workerInfo, modelReady } from '../app/importer.js';
+import { GUIDE_INSTRUMENTS } from '../app/builders.js';
 import { playAttempt, renderMixWav, voiceWav } from '../app/playback.js';
 import { downloadBlob } from '../audio/wav.js';
 import { setupCanvas } from '../ui/pitchroll.js';
@@ -187,7 +188,7 @@ export function SettingsScreen() {
     <div class="list">${Object.entries(STRICTNESS).map(([k, v]) => html`<button class="item" style=${s.strictness === k ? 'outline:2px solid var(--accent)' : ''} onClick=${() => saveSettings({ strictness: k })}><div class="grow t">${v.label}</div>${s.strictness === k ? html`<span class="c-acc">●</span>` : null}</button>`)}</div>
     <div class="section-title">Zvuk</div>
     <div class="card">
-      <label class="field">Vodicí melodie<${Seg} options=${[['guide', 'Hlas (ú)'], ['piano', 'Klavír']]} value=${s.guideInst} onChange=${(v) => saveSettings({ guideInst: v })} /></label>
+      <label class="field">Vodicí melodie<select value=${s.guideInst || 'guide'} onChange=${(e) => { saveSettings({ guideInst: e.target.value }); engine.previewNote(60, 0.8, e.target.value); }}>${GUIDE_INSTRUMENTS.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
       <label class="field mt16">Styl doprovodu<select value=${s.accStyle} onChange=${(e) => saveSettings({ accStyle: e.target.value })}>${Object.entries(STYLES).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select></label>
       <${Toggle} label="Basa v doprovodu" on=${s.bass} onChange=${(v) => saveSettings({ bass: v })} />
       <${Toggle} label="Jemný rytmus (bicí)" on=${s.drums} onChange=${(v) => saveSettings({ drums: v })} />

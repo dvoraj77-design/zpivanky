@@ -83,7 +83,7 @@ export function compileSong(def) {
     source: def.source || 'builtin', level: def.level || 1, chapter: def.chapter ?? null,
     practices: def.practices || [], description: def.description || '', credits: def.credits || {},
     tempo: def.tempo || 90, meter: [bpb, unit], key: { tonic: def.key || 'C', mode: def.mode || 'major' },
-    sections: [], notes: [], chords: [], lyrics: [], phrases: [], timing: null, audio: null,
+    sections: [], notes: [], chords: [], lyrics: [], phrases: [], bars: [], timing: null, audio: null,
   };
   const errors = [];
   let t = 0, phraseIdx = 0, lineIdx = 0;
@@ -146,6 +146,8 @@ export function compileSong(def) {
         for (const c of ch.chords) if (!c.rest) song.chords.push({ t: secStart + c.t, d: c.d, sym: c.sym });
       } else if (!sec.melody && sec.bars) secLen = sec.bars * bpb;
       song.sections.push({ type: sec.type, name, start: secStart, end: secStart + secLen });
+      // taktové čáry (předtakt = kratší první takt oddílu)
+      for (let b = secStart, k = 0; b < secStart + secLen - 1e-6; k++) { song.bars.push(Math.round(b * 1000) / 1000); b += k === 0 && sec.pickup ? sec.pickup : bpb; }
       t += secLen;
     });
   }
@@ -156,6 +158,33 @@ export function compileSong(def) {
 }
 
 // ---------- Pomocné funkce nad kanonickým formátem ----------
+/** Začátky taktů (doby): z písně, jinak pravidelně po bpb od 0. */
+export function barStarts(song) {
+  if (Array.isArray(song.bars) && song.bars.length) return song.bars;
+  const bpb = song.meter[0], out = [];
+  const end = song.length ?? Math.max(0, ...song.notes.map((n) => n.t + n.d));
+  for (let b = 0; b < end - 1e-6; b += bpb) out.push(b);
+  return out.length ? out : [0];
+}
+
+/**
+ * Smyčka pro nácvik fráze po celých taktech: jeden volný takt na přípravu před frází (hraje doprovod),
+ * pak takty s frází. Vrací {from, to, phraseFrom} v dobách písně (from může být záporné = před začátkem písně).
+ */
+export function phraseLoop(song, phrase, { prepBars = 1 } = {}) {
+  const bars = barStarts(song), bpb = song.meter[0];
+  let i = 0;
+  for (let k = 0; k < bars.length; k++) if (bars[k] <= phrase.start + 1e-6) i = k;
+  const phraseFrom = bars[i];
+  let from = phraseFrom;
+  for (let k = 0; k < prepBars; k++) from = i - 1 - k >= 0 ? bars[i - 1 - k] : from - bpb;
+  let to = null;
+  for (const b of bars) if (b >= phrase.end - 1e-6) { to = b; break; }
+  if (to == null) { const last = bars[bars.length - 1]; to = last; while (to < phrase.end - 1e-6) to += bpb; }
+  return { from, to, phraseFrom };
+}
+
+
 export function songRange(song) {
   const ps = song.notes.map((n) => n.p);
   return ps.length ? { lo: Math.min(...ps), hi: Math.max(...ps) } : { lo: 60, hi: 60 };

@@ -25,7 +25,7 @@ export const HELP = [
   ] },
   { id: 'modes', icon: '🎚️', title: 'Režimy písní', body: [
     '**🎤 Zpívat** – doprovod hraje celou píseň a nezastavuje se. Tlačítkem **Vodicí melodie** zapneš nebo vypneš hlas, který zpívá melodii s tebou (pro začátek nech zapnuté). Na konci dostaneš hodnocení.',
-    '**🔁 Nacvičit frázi** – jedna fráze (řádek textu) hraje dokola. Šipkami ◀ ▶ přejdeš na předchozí nebo další. Hodí se na těžká místa. Volitelně „čekat, až tón trefím“.',
+    '**🔁 Nacvičit frázi** – jedna fráze (řádek textu) hraje dokola v rytmu, po celých taktech; před ní je vždy jeden volný takt, kdy hraje jen doprovod a ty se nadechneš. Šipkami ◀ ▶ přejdeš na předchozí nebo další. Hodí se na těžká místa. Volitelně „čekat, až tón trefím“.',
     '**👂 Poslech** – jen poslouchej, jak píseň zní. Nic se nehodnotí.',
     '**Tempo** (posuvník) zpomalí nebo zrychlí píseň, výška se nezmění. Začni na 70 %.',
     '**Tónina** – aplikace sama doporučí výšku podle tvého hlasu (★). Tlačítky − a ＋ ji můžeš posunout o půltón.',

@@ -6,6 +6,8 @@ import { PitchRoll, viewRange } from '../ui/pitchroll.js';
 import { DeviationChart, DynChart } from '../ui/charts.js';
 import { Session, BreathSession } from '../app/session.js';
 import { playAttempt, renderMixWav, voiceWav } from '../app/playback.js';
+import { applyMix, MIX_ROWS, MIX_MAX } from '../app/mix.js';
+import { GUIDE_INSTRUMENTS } from '../app/builders.js';
 import { downloadBlob } from '../audio/wav.js';
 import { engine } from '../audio/engine.js';
 import { state, saveSettings, hpProfile } from '../state.js';
@@ -82,12 +84,7 @@ export function RunScreen(props) {
     }
   }, phase === 'running' ? 120 : null);
 
-  const applyMix = () => {
-    const m = state.settings.mix;
-    if (!engine.bus) return;
-    engine.bus.accomp.gain.value = m.accomp; engine.bus.guide.gain.value = state.settings.guideOn === false ? 0 : m.guide; engine.bus.metro.gain.value = m.metro;
-    engine.setMonitor(m.monitor > 0, m.monitor);
-  };
+
   const stopNow = async () => {
     const s = sessRef.current;
     if (s.state === 'running') {
@@ -184,17 +181,20 @@ function Karaoke({ lines, beat, items, offset }) {
 
 export function MixSheet({ onClose, onChange }) {
   const [m, setM] = useState({ ...state.settings.mix });
-  const set = (k, v) => { const n = { ...m, [k]: v }; setM(n); saveSettings({ mix: n }).then(() => onChange && onChange()); };
-  const row = (k, label, sub) => html`<div class="mt16"><div class="row between"><b>${label}</b><span class="small muted">${Math.round(m[k] * 100)} %</span></div>${sub ? html`<div class="tiny dim">${sub}</div>` : null}
-    <input type="range" min="0" max="1" step="0.05" value=${m[k]} onInput=${(e) => set(k, parseFloat(e.target.value))} aria-label=${label} /></div>`;
+  const [gi, setGi] = useState(state.settings.guideInst || 'guide');
+  const set = (k, v) => { const n = { ...m, [k]: v }; setM(n); saveSettings({ mix: n }).then(() => { applyMix(); onChange && onChange(); }); };
+  const row = (k, label, sub) => html`<div class="mt16"><div class="row between"><b>${label}</b><span class="small muted">${Math.round((m[k] ?? 1) * 100)} %</span></div>${sub ? html`<div class="tiny dim">${sub}</div>` : null}
+    <input type="range" min="0" max=${MIX_MAX} step="0.05" value=${m[k] ?? 1} onInput=${(e) => set(k, parseFloat(e.target.value))} aria-label=${label} /></div>`;
   return html`<${Sheet} onClose=${onClose}>
-    <h2>Mixážní pult</h2>
-    ${row('accomp', 'Doprovod')}
-    <div class="mt16 row between"><b>Vodicí melodie (Singer)</b>
-      <${Seg} options=${[['on', 'ON'], ['off', 'OFF']]} value=${state.settings.guideOn !== false ? 'on' : 'off'} onChange=${(v) => { saveSettings({ guideOn: v === 'on' }).then(() => onChange && onChange()); setM({ ...m }); }} /></div>
-    ${row('guide', 'Hlasitost vodicí melodie')}
-    ${row('metro', 'Metronom')}
+    <h2>Zvuk a hlasitosti</h2>
+    <div class="mt16 row between"><b>Vodicí melodie</b>
+      <${Seg} options=${[['on', 'ZAP'], ['off', 'VYP']]} value=${state.settings.guideOn !== false ? 'on' : 'off'} onChange=${(v) => { saveSettings({ guideOn: v === 'on' }).then(() => { applyMix(); onChange && onChange(); }); setM({ ...m }); }} /></div>
+    <label class="field mt8">Nástroj melodie<select value=${gi} onChange=${(e) => { setGi(e.target.value); saveSettings({ guideInst: e.target.value }).then(() => onChange && onChange('inst')); engine.previewNote(60, 0.8, e.target.value === 'piano' ? 'piano' : e.target.value); }} data-testid="guide-inst">
+      ${GUIDE_INSTRUMENTS.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
+    <p class="tiny dim">Nástroj se změní od dalšího spuštění. Hlubokým hlasům sedí violoncello, klarinet nebo varhany.</p>
+    ${MIX_ROWS.map(([k, l, sub]) => row(k, l, sub))}
     ${row('monitor', 'Příposlech vlastního hlasu', 'Jen se sluchátky! Na Androidu má příposlech zpoždění, u Bluetooth velké.')}
+    <button class="btn sm mt16" onClick=${() => { const n = { ...state.settings.mix, accomp: 0.6, bass: 0.75, drums: 0.6, guide: 1.1, metro: 0.5 }; setM(n); saveSettings({ mix: n }).then(applyMix); }}>Výchozí hlasitosti</button>
     <button class="btn block mt16" onClick=${onClose}>Hotovo</button>
   </${Sheet}>`;
 }

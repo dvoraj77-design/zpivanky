@@ -1,10 +1,14 @@
 // Sestavení parametrů běhu (Session) pro cvičení a písně podle nastavení.
-import { generateAccompaniment, guideEvents } from '../core/accomp.js';
+import { generateAccompaniment, guideEvents, metronomeEvents, roleOf } from '../core/accomp.js';
+
+const BUS = { chords: 'accomp', bass: 'bass', drums: 'drums' };
 import { buildExercise } from '../core/exercises.js';
 import { state, tol, hpProfile } from '../state.js';
 import { transposeSong, keyPc } from '../core/song.js';
 
-const guideInst = () => (state.settings.guideInst === 'piano' ? 'guidePiano' : 'guide');
+/** Nástroj vodicí melodie: syntetický hlas, klavír nebo vzorkovaný nástroj (flétna, klarinet, housle…). */
+export const GUIDE_INSTRUMENTS = [['guide', 'Hlas (ú)'], ['piano', 'Klavír'], ['flute', 'Flétna'], ['clarinet', 'Klarinet'], ['violin', 'Housle'], ['cello', 'Violoncello'], ['sax', 'Saxofon'], ['organ', 'Varhany']];
+const guideInst = () => { const g = state.settings.guideInst || 'guide'; return g === 'piano' ? 'guidePiano' : GUIDE_INSTRUMENTS.some(([k]) => k === g) ? g : 'guide'; };
 export const noHeadphones = () => state.settings.headphones === 'no' || hpProfile()?.type === 'speaker';
 
 /** Akordy cvičení → tichý klavír + basa. */
@@ -43,22 +47,25 @@ export function exerciseSessionOpts(plan, { guide = true } = {}) {
 /**
  * mode: 'sing' (doprovod + vodicí melodie na přepínač) | 'phrase' (smyčka fráze, volitelně čekání na tón) | 'listen'
  */
-export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', loop = null, wait = false, style, drums, bass, metronome = false, clips = null } = {}) {
+export function songSessionOpts(song0, { shift = 0, factor = 1, mode = 'sing', loop = null, wait = false, style, drums, bass, metronome = false, clips = null, phrase = null, prep = null } = {}) {
   const song = transposeSong(song0, shift);
   const bpb = song.meter[0];
   // originální doprovod (importovaná píseň): syntetický doprovod se nehraje
   const orig = !!clips?.length;
   const st = orig ? 'none' : style || state.settings.accStyle;
   const acc = st === 'none' ? [] : generateAccompaniment(song, { style: st, bass: bass ?? state.settings.bass, drums: drums ?? state.settings.drums });
-  const guide = guideEvents(song, guideInst()).map((e) => ({ ...e, bus: 'guide' }));
+  // nácvik fráze: vodicí melodie jen pro nacvičovanou frázi (v přípravném taktu nic nezpívá)
+  const guide = guideEvents(song, guideInst()).map((e, i) => ({ ...e, bus: 'guide', phrase: song.notes[i].phrase })).filter((e) => phrase == null || e.phrase === phrase);
   let items = song.notes.map((n) => ({ t: n.t, d: n.d, midi: n.p, syl: lyricSyl(n, song), phrase: n.phrase, kind: 'note', note: n }));
-  const audio = [...acc.map((e) => ({ ...e, bus: 'accomp' }))];
+  const audio = [...acc.map((e) => ({ ...e, bus: BUS[roleOf(e)] }))];
+  // přípravný takt: tiché kliky, aby smyčka držela rytmus
+  if (prep && prep.from >= 0) audio.push(...metronomeEvents(prep.from, prep.to, bpb).map((e) => ({ ...e, vel: e.vel * 0.6 })));
   const origVoc = orig && clips.some((c) => c.which === 'voc');
   if (mode === 'listen') { items = items.map((i) => ({ ...i, listen: true })); if (!origVoc) audio.push(...guide.map((e) => ({ ...e, bus: 'accomp' }))); }
   else audio.push(...guide);
   return {
     song, kind: 'pitch', items, audio, tempo: song.tempo, factor, bpb, countIn: bpb, metronome,
-    tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0, waitMode: mode === 'phrase' && wait, loop,
+    tol: tol(), latencyMs: hpProfile()?.latencyMs ?? 0, waitMode: mode === 'phrase' && wait, loop, loopLead: prep ? 0 : undefined,
     record: mode !== 'listen' && state.settings.saveRecordings, keyPc: keyPc(song.key.tonic) + (song.key.mode === 'minor' ? 3 : 0), length: song.length,
     clips: orig ? clips.map((c) => (mode === 'listen' && c.which === 'voc' ? { ...c, bus: 'accomp' } : c)) : [],
   };

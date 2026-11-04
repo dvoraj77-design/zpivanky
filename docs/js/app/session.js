@@ -52,7 +52,7 @@ export class Session {
   async start() {
     const o = this.o;
     await engine.ensureContext();
-    await engine.loadInstruments().catch(() => {});
+    await engine.loadInstruments(engine.instrumentsFor(o.audio)).catch(() => {});
     const ci = o.countIn;
     const ev = o.audio.map((e) => ({ ...e, t: e.t + ci }));
     const len = Math.max(...this.items.map((i) => i.t + i.d), ...ev.map((e) => e.t + e.d), ci) + 0.5;
@@ -68,7 +68,7 @@ export class Session {
     engine.resetTracker();
     this.unsub = engine.onFrames((fr) => this._onFrames(fr));
     if (o.record) engine.startRecording();
-    this.startTime = this.transport.start(loop ? Math.max(0, loop.from - o.bpb) : 0, 0.25);
+    this.startTime = this.transport.start(loop ? Math.max(0, loop.from - (o.loopLead ?? o.bpb)) : 0, 0.25);
     if (engine.testBuffer && o.testInput !== false) engine.startTestInput(this.startTime + (o.testOffset || 0));
     this.state = 'running';
     this.t0 = performance.now();

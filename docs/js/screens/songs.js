@@ -5,9 +5,11 @@ import { LEVELS } from '../data/songs.js';
 import { state, allSongs, findSong, saveSettings, saveCustomSong, deleteCustomSong, hpProfile } from '../state.js';
 import { recommendShifts } from '../core/voice.js';
 import { keyName, chordSymbol, parseChord, noteName } from '../core/music.js';
-import { keyPc, songRange, transposeSong, validateSong, checkHarmony } from '../core/song.js';
-import { songSessionOpts, noHeadphones } from '../app/builders.js';
-import { RunScreen } from './run.js';
+import { keyPc, songRange, transposeSong, validateSong, checkHarmony, phraseLoop } from '../core/song.js';
+import { songSessionOpts, noHeadphones, GUIDE_INSTRUMENTS } from '../app/builders.js';
+import { applyMix } from '../app/mix.js';
+import { playAttempt } from '../app/playback.js';
+import { RunScreen, MixSheet } from './run.js';
 import { saveAttempt } from '../app/record.js';
 import { STYLES } from '../core/accomp.js';
 import { engine } from '../audio/engine.js';
@@ -47,7 +49,7 @@ export function SongsScreen() {
 
 export const MODES = [
   ['sing', '🎤 Zpívat', 'Doprovod hraje celou píseň bez zastavování. Vodicí melodii zapneš a vypneš tlačítkem při zpěvu.'],
-  ['phrase', '🔁 Nacvičit frázi', 'Jedna fráze hraje dokola, šipkami přejdeš na další. Ideální na těžká místa.'],
+  ['phrase', '🔁 Nacvičit frázi', 'Fráze hraje dokola v rytmu po celých taktech, před ní je vždy jeden volný takt na nádech. Šipkami přejdeš na další.'],
   ['listen', '👂 Poslech', 'Jen poslouchej melodii s doprovodem, nic se nehodnotí.'],
 ];
 export const normalizeMode = (m) => (m === 'listen' || m === 'phrase' ? m : 'sing');
@@ -86,6 +88,22 @@ function SongDetailInner({ song, justImported }) {
   const outOfRange = rng.lo < st.profile.low || rng.hi > st.profile.highChest;
   const go = () => navigate(`/play/${song.id}?shift=${shift}&f=${factor}&mode=${mode}&part=${loopSel}&ph=${phraseSel}&wait=${waitOn ? 1 : 0}&acc=${accOrig ? 'orig' : 'synth'}`);
   const loops = [['all', 'Celá píseň'], ...song.sections.filter((s) => s.type !== 'intro' && s.type !== 'outro').map((s) => ['s' + song.sections.indexOf(s), s.name + ' (dokola)'])];
+  // ukázka: první fráze s doprovodem a vodicí melodií v aktuálním nastavení
+  const [previewing, setPreviewing] = useState(false);
+  const prevRef = useRef(null);
+  useEffect(() => () => prevRef.current?.stop(), []);
+  const soundPreview = async () => {
+    if (prevRef.current) { prevRef.current.stop(); prevRef.current = null; setPreviewing(false); return; }
+    applyMix();
+    const o = songSessionOpts(song, { shift, factor, mode: 'sing' });
+    const bpb = song.meter[0];
+    const first = song.phrases[0]?.start ?? 0;
+    const to = o.countIn + Math.min(song.length, Math.ceil((first + 4 * bpb) / bpb) * bpb);
+    const h = await playAttempt(o, null, { fromBeat: o.countIn + Math.max(0, Math.floor(first / bpb) * bpb - bpb), toBeat: to, voice: false, guideGain: 1, accompGain: 1 });
+    prevRef.current = h; setPreviewing(true);
+    const spb = 60 / (o.tempo * o.factor);
+    setTimeout(() => { if (prevRef.current === h) { prevRef.current = null; setPreviewing(false); } }, (to - o.countIn) * spb * 1000 + 800);
+  };
   const preview = async () => {
     await engine.ensureContext(); await engine.loadInstruments().catch(() => {});
     const notes = tr.notes.slice(0, 10);
@@ -135,11 +153,16 @@ function SongDetailInner({ song, justImported }) {
       <label class="field">Doprovod<select value=${accOrig ? 'orig' : st.settings.accStyle} onChange=${(e) => { const v = e.target.value; if (v === 'orig') setAcc('orig'); else { setAcc('synth'); saveSettings({ accStyle: v }); } }} data-testid="acc-select">
         ${hasOrig ? html`<option value="orig">🎧 Originál (bez zpěvu)</option>` : null}${Object.entries(STYLES).map(([k, v]) => html`<option value=${k}>${v}</option>`)}</select></label>
       <label class="field">Text<${Seg} options=${[['text', 'Text'], ['la', 'la'], ['nu', 'nu'], ['solf', 'do re mi']]} value=${st.settings.lyricsMode} onChange=${(v) => saveSettings({ lyricsMode: v })} /></label>
-      ${accOrig ? null : html`<div class="row between"><span style="font-weight:700">Jemný rytmus (bicí)</span><${Seg} options=${[[true, 'Ano'], [false, 'Ne']]} value=${st.settings.drums} onChange=${(v) => saveSettings({ drums: v })} /></div>`}
+      ${accOrig || st.settings.accStyle === 'band' || st.settings.accStyle === 'none' ? null : html`<div class="row between"><span style="font-weight:700">Jemný rytmus (bicí)</span><${Seg} options=${[[true, 'Ano'], [false, 'Ne']]} value=${st.settings.drums} onChange=${(v) => saveSettings({ drums: v })} /></div>`}
+      <label class="field">Vodicí melodie hraje<select value=${st.settings.guideInst || 'guide'} onChange=${(e) => { saveSettings({ guideInst: e.target.value }); engine.previewNote(tr.notes[0]?.p ?? 60, 0.9, e.target.value); }} data-testid="detail-guide-inst">
+        ${GUIDE_INSTRUMENTS.map(([k, l]) => html`<option value=${k}>${l}</option>`)}</select></label>
+      <div class="row"><button class="btn sm grow" onClick=${soundPreview} data-testid="sound-preview">${previewing ? '■ Zastavit ukázku' : '🔊 Ukázka zvuku'}</button>
+        <button class="btn sm grow" onClick=${() => setSheet('mix')} data-testid="open-mix">🎚️ Hlasitosti</button></div>
     </div>
     <button class="btn block mt16" onClick=${() => setSheet('text')}>📄 Text a akordy</button>
     ${sheet === 'text' ? html`<${Sheet} onClose=${() => setSheet(null)}><h2 class="mb8">${song.title}</h2><${LyricsChords} song=${tr} /></${Sheet}>` : null}
     ${sheet === 'edit' ? html`<${ImportEdit} song=${song} onClose=${() => setSheet(null)} />` : null}
+    ${sheet === 'mix' ? html`<${MixSheet} onClose=${() => setSheet(null)} />` : null}
     <div class="bottom-actions"><button class="btn primary big block" onClick=${go}>▶ Zpívat</button></div>
   </div>`;
 }
@@ -264,8 +287,9 @@ function SongPlayInner({ song, query }) {
     if (!clips) return null;
     let loop = null;
     if (mode === 'sing' && part.startsWith('s')) { const s = song.sections[parseInt(part.slice(1), 10)]; if (s) loop = { from: s.start, to: s.end }; }
-    if (mode === 'phrase') { const p = song.phrases[ph]; if (p) loop = { from: Math.floor(p.start), to: Math.ceil(p.end) + 1 }; }
-    const o = songSessionOpts(song, { shift, factor, mode, loop, wait: mode === 'phrase' && wait, clips });
+    let prep = null;
+    if (mode === 'phrase') { const p = song.phrases[ph]; if (p) { const L = phraseLoop(song, p); loop = { from: L.from, to: L.to }; prep = { from: L.from, to: L.phraseFrom }; } }
+    const o = songSessionOpts(song, { shift, factor, mode, loop, wait: mode === 'phrase' && wait, clips, phrase: mode === 'phrase' ? song.phrases[ph]?.index : null, prep });
     if (mode === 'phrase') o.items = o.items.filter((i) => i.phrase === song.phrases[ph]?.index);
     else if (loop) o.items = o.items.filter((i) => i.t >= loop.from - 1e-6 && i.t < loop.to);
     return o;

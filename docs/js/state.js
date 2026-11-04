@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS = {
     { id: 'speaker', name: 'Reproduktor telefonu', type: 'speaker', latencyMs: 60, calibrated: false },
   ],
   activeHp: 'bt', onboarded: false, saveRecordings: true, lyricsMode: 'text',
-  mix: { accomp: 0.75, guide: 0.7, metro: 0.5, monitor: 0 }, guideOn: true, songTempo: 0.7, exTempo: 0.7, beginner: true, hiddenHints: [], view: 'roll', countIn: true, lastBreakReminder: 0,
+  mix: { accomp: 0.6, bass: 0.75, drums: 0.6, guide: 1.1, metro: 0.5, monitor: 0 }, mixVer: 2, guideOn: true, songTempo: 0.7, exTempo: 0.7, beginner: true, hiddenHints: [], view: 'roll', countIn: true, lastBreakReminder: 0,
 };
 
 const listeners = new Set();
@@ -35,6 +35,8 @@ export async function loadState() {
   try {
     const kv = await db.allKV();
     if (kv.settings) state.settings = { ...structuredClone(DEFAULT_SETTINGS), ...kv.settings, mix: { ...DEFAULT_SETTINGS.mix, ...(kv.settings.mix || {}) } };
+    // vodicí melodie v doprovodu zanikala → jednorázově hlasitější melodie a tišší akordy
+    if (kv.settings && !kv.settings.mixVer) { const m = state.settings.mix; state.settings.mix = { ...m, guide: Math.max(m.guide, 1.1), accomp: Math.min(m.accomp, 0.6) }; state.settings.mixVer = 2; }
     if (kv.profile) state.profile = kv.profile;
     if (kv.profileHistory) state.profileHistory = kv.profileHistory;
     if (kv.progress) state.progress = { ...emptyProgress(), ...kv.progress };

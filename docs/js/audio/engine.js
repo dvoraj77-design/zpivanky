@@ -1,7 +1,8 @@
 // Zvukový engine: AudioContext, mikrofon → worklet → worker (detekce), nástroje, sběrnice, nahrávání, diagnostika.
-import { Sampler, GuideVoice, Percussion, Drone } from './instruments.js';
+import { Sampler, GuideVoice, Percussion, Drone, SAMPLE_SETS } from './instruments.js';
 
 const BASE = new URL('../../', import.meta.url).href;
+const CORE = ['piano', 'guitar', 'bass'];
 
 export const MIC_ERRORS = {
   NotAllowedError: 'Mikrofon je zakázaný. V Chromu klepni na ikonu zámku vedle adresy → Oprávnění → Mikrofon → Povolit. U nainstalované aplikace: Nastavení Androidu → Aplikace → Zpívánky (nebo Chrome) → Oprávnění → Mikrofon.',
@@ -58,16 +59,14 @@ export class AudioEngine {
       comp.threshold.value = -10; comp.ratio.value = 4; comp.attack.value = 0.005; comp.release.value = 0.2;
       this.master.connect(comp); comp.connect(ctx.destination);
       this.bus = {};
-      for (const k of ['accomp', 'guide', 'metro', 'monitor', 'preview', 'playback']) {
+      for (const k of ['accomp', 'bass', 'drums', 'guide', 'metro', 'monitor', 'preview', 'playback']) {
         const g = ctx.createGain(); g.gain.value = 1; g.connect(this.master); this.bus[k] = g;
       }
       this.bus.monitor.gain.value = 0;
       this.guide = new GuideVoice(ctx);
       this.perc = new Percussion(ctx);
       this.drone = new Drone(ctx, this.bus.preview);
-      this.inst.piano = new Sampler(ctx, 'piano', BASE);
-      this.inst.guitar = new Sampler(ctx, 'guitar', BASE);
-      this.inst.bass = new Sampler(ctx, 'bass', BASE);
+      for (const k of Object.keys(SAMPLE_SETS)) this.inst[k] = new Sampler(ctx, k, BASE); // načítají se až podle potřeby
       await ctx.audioWorklet.addModule(BASE + 'js/audio/capture-worklet.js');
       this.node = new AudioWorkletNode(ctx, 'zp-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1], channelCount: 1, channelCountMode: 'explicit' });
       const sink = ctx.createGain(); sink.gain.value = 0; this.node.connect(sink); sink.connect(ctx.destination);
@@ -191,11 +190,17 @@ export class AudioEngine {
   }
 
   // ---------- Nástroje ----------
-  loadInstruments() {
-    if (!this.instLoading) this.instLoading = Promise.all(Object.values(this.inst).map((s) => s.load())).catch((e) => { this.instLoading = null; throw e; });
-    return this.instLoading;
+  /** Načte vzorky nástrojů (výchozí klavír, kytara, basa; ostatní až když je píseň použije). */
+  loadInstruments(names = CORE) {
+    return Promise.all(names.filter((n) => this.inst[n]).map((n) => this.inst[n].load()));
   }
-  get instrumentsReady() { return Object.values(this.inst).every((s) => s.loaded); }
+  /** Nástroje, které použijí dané události (pro načtení před startem). */
+  instrumentsFor(events) {
+    const set = new Set(CORE);
+    for (const e of events || []) { const n = e.inst === 'guidePiano' ? 'piano' : e.inst; if (this.inst[n] || SAMPLE_SETS[n]) set.add(n); }
+    return [...set];
+  }
+  get instrumentsReady() { return CORE.every((n) => this.inst[n]?.loaded); }
 
   /** Zahraje událost {midi, inst, vel, toMidi} v čase when po dobu dur (s). */
   playEvent(e, when, dur, bus) {
@@ -211,12 +216,13 @@ export class AudioEngine {
   /** Rychlé přehrání noty (klepnutí na notu). */
   async previewNote(midi, dur = 1.2, inst = 'piano') {
     await this.ensureContext();
-    if (inst !== 'guide') await this.loadInstruments().catch(() => {});
-    return this.playEvent({ midi, inst: inst === 'piano' && !this.inst.piano.loaded ? 'guide' : inst, vel: 0.8 }, this.now + 0.02, dur, this.bus.preview);
+    const name = inst === 'guidePiano' ? 'piano' : inst;
+    if (inst !== 'guide') await this.loadInstruments([name]).catch(() => {});
+    return this.playEvent({ midi, inst: this.inst[name] && !this.inst[name].loaded ? 'guide' : inst, vel: 0.8 }, this.now + 0.02, dur, this.bus.preview);
   }
   async previewSequence(notes, spb = 0.6, inst = 'piano') {
     await this.ensureContext();
-    await this.loadInstruments().catch(() => {});
+    await this.loadInstruments(this.instrumentsFor([{ inst }])).catch(() => {});
     const t0 = this.now + 0.05;
     for (const n of notes) this.playEvent({ midi: n.midi, inst, vel: 0.8, toMidi: n.toMidi }, t0 + n.t * spb, n.d * spb, this.bus.preview);
     return t0;

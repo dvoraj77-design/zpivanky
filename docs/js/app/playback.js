@@ -4,12 +4,12 @@ import { Transport } from '../audio/transport.js';
 import { encodeWav } from '../audio/wav.js';
 
 /** Přehraje doprovod + vodicí melodii a moji nahrávku zarovnanou podle zpoždění. */
-export async function playAttempt(opts, rec, { fromBeat = 0, toBeat = null, accomp = true, guide = true, voice = true } = {}) {
+export async function playAttempt(opts, rec, { fromBeat = 0, toBeat = null, accomp = true, guide = true, voice = true, guideGain = 0.5, accompGain = 0.8 } = {}) {
   await engine.ensureContext();
-  await engine.loadInstruments().catch(() => {});
+  await engine.loadInstruments(engine.instrumentsFor(opts.audio)).catch(() => {});
   const ci = opts.countIn || 0;
   const spb = 60 / (opts.tempo * (opts.factor || 1));
-  const events = opts.audio.filter((e) => (e.bus === 'guide' ? guide : accomp)).map((e) => ({ ...e, t: e.t + ci, vel: (e.vel ?? 0.6) * (e.bus === 'guide' ? 0.5 : 0.8) }));
+  const events = opts.audio.filter((e) => (e.bus === 'guide' ? guide : accomp)).map((e) => ({ ...e, t: e.t + ci, vel: (e.vel ?? 0.6) * (e.bus === 'guide' ? guideGain : accompGain) }));
   const tr = new Transport(engine);
   const end = toBeat ?? Math.max(...opts.items.map((i) => i.t + i.d)) + ci + 1;
   const clips = accomp ? (opts.clips || []).filter((c) => c.bus === 'accomp').map((c) => ({ ...c, beat0: c.beat0 + ci })) : [];
@@ -29,7 +29,7 @@ export async function playAttempt(opts, rec, { fromBeat = 0, toBeat = null, acco
 
 /** Vyrenderuje mix (hlas + doprovod) do WAV (mono 32 kHz). */
 export async function renderMixWav(opts, rec, { accompGain = 0.6, voiceGain = 1 } = {}) {
-  await engine.loadInstruments();
+  await engine.loadInstruments(engine.instrumentsFor(opts.audio));
   const sr = 32000;
   const ci = opts.countIn || 0;
   const spb = 60 / (opts.tempo * (opts.factor || 1));
@@ -49,13 +49,16 @@ export async function renderMixWav(opts, rec, { accompGain = 0.6, voiceGain = 1 
     if (e.bus === 'guide') continue;
     const t = (e.t + ci) * spb - (rec.offset || 0) + (rec.latency || 0);
     if (t < 0 || t > dur) continue;
-    const s = engine.inst[e.inst];
+    const s = engine.inst[e.inst === 'guidePiano' ? 'piano' : e.inst];
     if (!s?.buffers?.length) continue;
     let best = s.buffers[0];
     for (const b of s.buffers) if (Math.abs(b.midi - e.midi) < Math.abs(best.midi - e.midi)) best = b;
-    const src = off.createBufferSource(); src.buffer = best.buf; src.playbackRate.value = Math.pow(2, (e.midi - best.midi) / 12);
+    const rate = Math.pow(2, (e.midi - best.midi) / 12);
+    const src = off.createBufferSource(); src.buffer = best.buf; src.playbackRate.value = rate;
     const g = off.createGain(); const d = e.d * spb;
-    g.gain.setValueAtTime(e.vel ?? 0.6, t); g.gain.setValueAtTime(e.vel ?? 0.6, t + d); g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.3);
+    if (best.loopEnd && (d + 0.3) * rate > best.loopEnd - 0.05) { src.loop = true; src.loopStart = best.loopStart; src.loopEnd = best.loopEnd; }
+    const amp = (e.vel ?? 0.6) * (s.set?.gain ?? 1);
+    g.gain.setValueAtTime(amp, t); g.gain.setValueAtTime(amp, t + d); g.gain.exponentialRampToValueAtTime(0.001, t + d + 0.3);
     src.connect(g); g.connect(ag); src.start(t); src.stop(t + d + 0.35);
   }
   // originální doprovod (bez zpěvu)

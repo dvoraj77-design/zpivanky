@@ -73,11 +73,11 @@ test('doprovod se vygeneruje bez chyb pro všechny písně, styly a transpozice'
           }
           if (style !== 'none') assert.ok(ev.length > 10, `${s.id} ${style}: málo událostí`);
           // akordové tóny doprovodu patří do akordu
-          for (const e of ev.filter((x) => x.inst === 'piano' || x.inst === 'guitar')) {
+          for (const e of ev.filter((x) => x.inst !== 'drum')) {
             const c = s.chords.filter((c) => c.t <= e.t + 1e-6).at(-1);
             if (!c) continue;
             const ch = parseChord(c.sym);
-            assert.ok(ch.pcs.includes(pc(e.midi)) || ch.bass === pc(e.midi), `${s.id} ${style}: tón ${e.midi} mimo akord ${c.sym} v ${e.t}`);
+            assert.ok(ch.pcs.includes(pc(e.midi)) || ch.bass === pc(e.midi), `${s.id} ${style}: ${e.inst} ${e.midi} mimo akord ${c.sym} v ${e.t}`);
           }
         }
       }
@@ -94,4 +94,18 @@ test('parser: slabiky, melisma, spojená slova, kontrola taktu', () => {
   assert.ok(bad.errors.length === 1);
   const s = compileSong({ id: 't', title: 'T', tempo: 90, meter: '4/4', sections: [{ type: 'verse', melody: 'C4/1 D E F', lyrics: 'a b c', chords: 'C' }] });
   assert.ok(s.errors.some((e) => e.includes('chybí slabika')));
+});
+test('nácvik fráze: smyčka po celých taktech s jedním přípravným taktem (i s předtaktem)', async () => {
+  const { compileSong, phraseLoop, barStarts } = await import('../../docs/js/core/song.js');
+  const s = compileSong({ id: 'x', title: 'X', tempo: 90, meter: '3/4', key: 'C', sections: [
+    { type: 'verse', pickup: 1, melody: 'G4/1 | C5/2 D/1 | E/2 r/1 | E/1 D C | D/2 G4/1 | C5/3', lyrics: 'a / b c d / e f g / h i j', chords: 'C | C | C | C | G | C' },
+  ] });
+  assert.deepEqual(s.errors, []);
+  assert.deepEqual(barStarts(s), [0, 1, 4, 7, 10, 13]);
+  // fráze „b c d“ (doby 1–6) → příprava = předtakt, konec na nejbližší taktové čáře
+  assert.deepEqual(phraseLoop(s, s.phrases[1]), { from: 0, to: 7, phraseFrom: 1 });
+  // fráze „e f g“ začíná taktem od doby 7 → příprava = celý předchozí takt (4–7)
+  assert.deepEqual(phraseLoop(s, s.phrases[2]), { from: 4, to: 10, phraseFrom: 7 });
+  // první fráze (předtakt) → přípravný takt ještě před začátkem písně
+  assert.deepEqual(phraseLoop(s, s.phrases[0]), { from: -3, to: 1, phraseFrom: 0 });
 });

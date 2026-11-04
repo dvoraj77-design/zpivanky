@@ -1,9 +1,17 @@
-// Nástroje: vzorkovač (klavír, kytara, basa – přibalené vzorky), vodicí hlas, bourdon, metronom, bicí (syntéza).
+// Nástroje: vzorkovač (klavír, kytary, basa, smyčce, dechy, varhany – přibalené vzorky), vodicí hlas, bourdon, metronom, bicí (syntéza).
 
-const SAMPLE_SETS = {
-  piano: { dir: 'piano', notes: ['A1', 'C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6', 'A6', 'C7'], release: 0.35, gain: 1.0 },
-  guitar: { dir: 'guitar', notes: ['E2', 'G2', 'As2', 'Cs3', 'E3', 'G3', 'As3', 'Cs4', 'E4', 'G4'], release: 0.25, gain: 0.85 },
-  bass: { dir: 'bass', notes: ['E1', 'G1', 'As1', 'Cs2', 'E2', 'G2', 'As2', 'Cs3', 'E3', 'G3', 'As3'], release: 0.12, gain: 0.9 },
+// gain vyrovnává hlasitost vzorků (průměr prvních 1,5 s: klavír −30 dB, klarinet −11 dB…), sustain = dlouhé tóny se smyčkují
+export const SAMPLE_SETS = {
+  piano: { dir: 'piano', notes: ['A1', 'C2', 'Ds2', 'Fs2', 'A2', 'C3', 'Ds3', 'Fs3', 'A3', 'C4', 'Ds4', 'Fs4', 'A4', 'C5', 'Ds5', 'Fs5', 'A5', 'C6', 'Ds6', 'Fs6', 'A6', 'C7'], release: 0.35, gain: 1.0, name: 'Klavír' },
+  guitar: { dir: 'guitar', notes: ['E2', 'G2', 'As2', 'Cs3', 'E3', 'G3', 'As3', 'Cs4', 'E4', 'G4'], release: 0.25, gain: 0.85, name: 'Kytara' },
+  bass: { dir: 'bass', notes: ['E1', 'G1', 'As1', 'Cs2', 'E2', 'G2', 'As2', 'Cs3', 'E3', 'G3', 'As3'], release: 0.12, gain: 0.9, name: 'Basa' },
+  nylon: { dir: 'nylon', notes: ['E2', 'A2', 'D3', 'G3', 'B3', 'E4', 'A4', 'E5'], release: 0.3, gain: 0.5, name: 'Klasická kytara' },
+  violin: { dir: 'violin', notes: ['G3', 'C4', 'E4', 'A4', 'C5', 'E5', 'A5', 'C6'], release: 0.3, gain: 0.36, attack: 0.05, sustain: true, name: 'Housle' },
+  cello: { dir: 'cello', notes: ['C2', 'E2', 'G2', 'C3', 'E3', 'G3', 'C4', 'E4', 'G4'], release: 0.3, gain: 0.27, attack: 0.05, sustain: true, name: 'Violoncello' },
+  flute: { dir: 'flute', notes: ['C4', 'E4', 'A4', 'C5', 'E5', 'A5', 'C6'], release: 0.15, gain: 0.27, attack: 0.03, sustain: true, name: 'Flétna' },
+  clarinet: { dir: 'clarinet', notes: ['D3', 'F3', 'As3', 'D4', 'F4', 'As4', 'D5', 'F5'], release: 0.12, gain: 0.22, attack: 0.02, sustain: true, name: 'Klarinet' },
+  sax: { dir: 'sax', notes: ['Cs3', 'E3', 'G3', 'As3', 'Cs4', 'E4', 'G4', 'As4', 'Cs5', 'E5'], release: 0.12, gain: 0.26, attack: 0.02, sustain: true, name: 'Saxofon' },
+  organ: { dir: 'organ', notes: ['C2', 'Fs2', 'C3', 'Fs3', 'C4', 'Fs4', 'C5', 'Fs5'], release: 0.08, gain: 0.3, attack: 0.01, sustain: true, name: 'Varhany' },
 };
 const LET = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 function nameToMidi(n) {
@@ -19,7 +27,7 @@ export function sampleUrls() {
 export class Sampler {
   constructor(ctx, name, base = './') {
     this.ctx = ctx; this.name = name; this.set = SAMPLE_SETS[name]; this.base = base;
-    this.buffers = []; // {midi, buf}
+    this.buffers = []; // {midi, buf, loopStart, loopEnd}
     this.loaded = false; this.loading = null;
   }
   load() {
@@ -29,26 +37,35 @@ export class Sampler {
       if (!res.ok) throw new Error('Nelze načíst zvuk ' + n);
       const ab = await res.arrayBuffer();
       const buf = await this.ctx.decodeAudioData(ab);
-      return { midi: nameToMidi(n), buf };
-    })).then((arr) => { this.buffers = arr.sort((a, b) => a.midi - b.midi); this.loaded = true; });
+      const midi = nameToMidi(n);
+      return { midi, buf, ...(this.set.sustain ? loopPoints(buf, midi) : {}) };
+    })).then((arr) => { this.buffers = arr.sort((a, b) => a.midi - b.midi); this.loaded = true; })
+      .catch((e) => { this.loading = null; throw e; });
     return this.loading;
   }
   /** Zahraje tón; vrací {stop(when)} */
   play(midi, when, dur, vel = 0.7, dest) {
     if (!this.loaded || !this.buffers.length) return null;
+    // mimo rozsah vzorků (víc než kvarta) → o oktávu(y) blíž, ať nezní zkresleně
+    const lo = this.buffers[0].midi, hi = this.buffers[this.buffers.length - 1].midi;
+    while (midi < lo - 5) midi += 12;
+    while (midi > hi + 5) midi -= 12;
     let best = this.buffers[0];
     for (const b of this.buffers) if (Math.abs(b.midi - midi) < Math.abs(best.midi - midi)) best = b;
     const ctx = this.ctx;
     const src = ctx.createBufferSource();
     src.buffer = best.buf;
-    src.playbackRate.value = Math.pow(2, (midi - best.midi) / 12);
+    const rate = Math.pow(2, (midi - best.midi) / 12);
+    src.playbackRate.value = rate;
+    const rel = this.set.release;
+    const t0 = Math.max(when, ctx.currentTime);
+    const end = t0 + Math.max(0.05, dur);
+    // dlouhý tón u drženého nástroje: smyčka v ustálené části vzorku
+    if (best.loopEnd && (dur + rel) * rate > best.loopEnd - 0.05) { src.loop = true; src.loopStart = best.loopStart; src.loopEnd = best.loopEnd; }
     const g = ctx.createGain();
     const amp = vel * this.set.gain;
-    const t0 = Math.max(when, ctx.currentTime);
     g.gain.setValueAtTime(0, t0);
-    g.gain.linearRampToValueAtTime(amp, t0 + 0.004);
-    const rel = this.set.release;
-    const end = t0 + Math.max(0.05, dur);
+    g.gain.linearRampToValueAtTime(amp, t0 + (this.set.attack || 0.004));
     g.gain.setValueAtTime(amp, end);
     g.gain.exponentialRampToValueAtTime(0.0008, end + rel);
     src.connect(g); g.connect(dest);
@@ -56,6 +73,23 @@ export class Sampler {
     src.stop(end + rel + 0.05);
     return { src, gain: g, stop: (t) => { try { const tt = Math.max(t ?? ctx.currentTime, ctx.currentTime); g.gain.cancelScheduledValues(tt); g.gain.setValueAtTime(g.gain.value, tt); g.gain.linearRampToValueAtTime(0, tt + 0.06); src.stop(tt + 0.08); } catch { /* už zastaveno */ } } };
   }
+}
+
+/** Body smyčky v ustálené části drženého tónu: celý počet period, začátek i konec na průchodu nulou nahoru. */
+export function loopPoints(buf, midi) {
+  const sr = buf.sampleRate, x = buf.getChannelData(0), n = x.length;
+  const P = sr / (440 * Math.pow(2, (midi - 69) / 12));
+  const from = Math.min(Math.round(1.0 * sr), Math.floor(n * 0.3)), to = Math.min(Math.round(3.4 * sr), Math.floor(n * 0.85));
+  if (to - from < P * 4) return {};
+  const up = (i, span) => { // nejbližší průchod nulou nahoru
+    let best = i, bd = Infinity;
+    for (let k = Math.max(1, Math.round(i - span)); k < Math.min(n - 1, Math.round(i + span)); k++) if (x[k - 1] < 0 && x[k] >= 0 && Math.abs(k - i) < bd) { bd = Math.abs(k - i); best = k; }
+    return best;
+  };
+  const ls = up(from, P);
+  const k = Math.floor((to - ls) / P);
+  const le = up(ls + k * P, P / 2);
+  return le - ls > P * 4 ? { loopStart: ls / sr, loopEnd: le / sr } : {};
 }
 
 /** Vodicí hlas: měkký syntetický „ú/á“ tón s vibratem; umí glissando. */
@@ -82,7 +116,7 @@ export class GuideVoice {
     const lp = ctx.createBiquadFilter();
     lp.type = 'lowpass'; lp.frequency.value = Math.min(4000, f0 * 6); lp.Q.value = 0.5;
     const g = ctx.createGain();
-    const amp = 0.32 * vel;
+    const amp = 0.45 * vel;
     g.gain.setValueAtTime(0, t0);
     g.gain.linearRampToValueAtTime(amp, t0 + 0.04);
     g.gain.setValueAtTime(amp, t0 + Math.max(0.05, dur - 0.06));
